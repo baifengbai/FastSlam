@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+import kalman_filter_ros.kalman_filter_node
+
+if __name__ == '__main__':
+ kalman_filter_ros.kalman_filter_node.main()
