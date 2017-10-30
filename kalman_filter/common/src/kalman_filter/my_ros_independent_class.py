@@ -1,7 +1,45 @@
 #!/usr/bin/env python
 
-def my_generic_sum_function(a, b):
- """
- TODO!! documentation
- """
- return a + b
+import numpy as np
+import math
+
+class ArucoInfo():
+	def __init__(self, arucoId, arucox, arucoy, arucoAlfa):
+		self.id=arucoId
+		self.x=arucox
+		self.y=arucoy
+		self.alfa=arucoAlfa
+		arucoPose=[self.x, self.y, self.alfa]
+
+
+class ArucoList():
+	def __init__(self, size=16):
+		self.aruco_list=[None]*size
+		self.size=size
+
+	def insert_marker(self, aruco_id, x, y, alfa):
+		new_aruco=ArucoInfo(aruco_id, x, y, alfa);
+		self.aruco_list[aruco_id]=new_aruco
+
+
+'''def ekfupdate(state, measurement, pose, expectedValue, cov):
+
+	#H matrix
+	alfaPose=state[2]
+	h=np.matrix([[math.cos(alfaPose), math.sin(alfaPose), 0], [-math.sin(alfaPose), math.cos(alfaPose), 0], [0, 0, 1]])
+
+	#Motion model
+	motionModel=state
+
+	#Observation model
+	measureModel=-pose+h.dot(state)
+	measureCov=???
+
+	#Prediction step
+	predExpectedValue=expectedValue
+	predCov=cov 
+
+	#Update step
+	kalmanGain=predCov.dot(h.transpose()).dot(np.linalg.inv(h.dot(predCov).dot(h.transpose()).dot(measureCov)))
+	updateExpectedValue=predExpectedValue+kalmanGain.dot(measurement-measureModel)
+	updateCov=(np.identity(3)-kalmanGain.dot(h)).dot(predCov)'''
