@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 import rospy
+import math
+import tf
 from kalman_filter.my_ros_independent_class import ArucoList
 from aruco_msgs.msg import MarkerArray	
 from tf.transformations import euler_from_quaternion
+from tf import TransformListener
+from geometry_msgs.msg import *
 
 class KalmanFilter():
 
@@ -11,7 +15,7 @@ class KalmanFilter():
 		self.aruco_msg = None
 		self.aruco_received = False
 		self.aruco_list=ArucoList()
-
+		self.listener=tf.TransformListener()
 
 		rospy.loginfo('Initializing kalman filter node')
 
@@ -27,19 +31,24 @@ class KalmanFilter():
 	def start_kalman_filter(self):
 		while not rospy.is_shutdown():
 			if self.aruco_received==True:
-				print("Esta true")
 				self.aruco_received=False
 				self.get_pose_arucos()
 
 	def get_pose_arucos(self):
+
 		for i in self.aruco_msg.markers:
-			aruco_id=i.id
-			x=i.pose.pose.position.z
-			y=-i.pose.pose.position.x
-			print("bora inserir na lista x:%d y:%d"%(x,y))
-			(roll,pitch,yaw) = euler_from_quaternion([i.pose.pose.orientation.x, i.pose.pose.orientation.y, i.pose.pose.orientation.z, i.pose.pose.orientation.w])		
+			object_pose_in= PoseStamped()
+			object_pose_in.header.stamp=rospy.Time.now()
+			object_pose_in.header.frame_id=i.id
+			object_pose_in.pose=i.pose.pose
+
+			object_pose_bl=self.listener.transformPose("/base_link",object_pose_in)
+			rospy.sleep(2)
+			x=object_pose_bl.pose.position.x
+			y=object_pose_bl.pose.position.y
+			(roll,pitch,yaw) = euler_from_quaternion([object_pose_bl.pose.orientation.x, object_pose_bl.pose.orientation.y, object_pose_bl.pose.orientation.z, object_pose_bl.pose.orientation.w])		
 			
-			self.aruco_list.insert_marker(aruco_id,x,y,-roll)
+			self.aruco_list.insert_marker(aruco_id,x,y,roll)
 
 def main():
 	
