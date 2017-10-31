@@ -13,8 +13,8 @@ from geometry_msgs.msg import *
 
 class MarkerEstimation():
 
-	def __init__(self,x,y,alpha=0):
-		self.id
+	def __init__(self,aid,x,y,alpha=0):
+		self.id=aid
 		self.x=x
 		self.y=y
 		self.orientation=alpha
@@ -63,15 +63,16 @@ class KalmanFilter():
 				self.start_kalman_filter()
 
 	def start_kalman_filter(self):
-		for i in self.aruco_list:
-			if self.markers_estimation[i.get_id]==None:
-				self.markers_estimation[i.get_id]=MarkerEstimation(i.get_x(), i.get_y())
-			else:
-				now=rospy.Time.now()
-				self.listener.waitForTransform("/odom", "/base_link", now, rospy.Duration(1.0))
-				robot_pose=self.listener.transformPose("/odom","/base_link")
-				self.markers_estimation[i.get_id].ekfupdate(i.get_measurement(), robot_pose)
-		
+		for i in self.aruco_list.get_list():
+			if i!=None:
+				if self.markers_estimation[i.get_id()]==None:
+					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),i.get_x(), i.get_y())
+				else:
+					now=rospy.Time.now()
+					self.listener.waitForTransform("/odom", "/base_link", now, rospy.Duration(1.0))
+					robot_pose=self.listener.transformPose("/odom","/base_link")
+					self.markers_estimation[i.get_id()].ekfupdate(i.get_measurement(), robot_pose)
+			
 
 	def create_detection_list(self):
 
