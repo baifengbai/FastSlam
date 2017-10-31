@@ -66,13 +66,10 @@ class KalmanFilter():
 			y=object_pose_bl.pose.position.y
 			(roll,pitch,yaw) = euler_from_quaternion([object_pose_bl.pose.orientation.x, object_pose_bl.pose.orientation.y, object_pose_bl.pose.orientation.z, object_pose_bl.pose.orientation.w])		
 			
-<<<<<<< HEAD
+
 			self.aruco_list.insert_marker(aruco_id,x,y,yaw)
 			print ("\n X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f \n"%(x, y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
-=======
-			self.aruco_list.insert_marker(aruco_id,x,y)
-			#print ("\n Roll=%f | Pitch=%f | Yaw=%f \n"%(roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
->>>>>>> origin/miguel
+
 
 def main():
 	
