@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import numpy
 import rospy
 import math
 import tf
@@ -8,33 +9,49 @@ from tf.transformations import euler_from_quaternion
 from tf import TransformListener
 from geometry_msgs.msg import *
 
+
+
+class MarkerEstimation():
+
+	def __init__(self,x,y,alpha=0):
+		self.id
+		self.x=x
+		self.y=y
+		self.orientation=alpha
+		self.covariance=numpy.identity(3)
+
 class KalmanFilter():
 
 	def __init__(self):
-
 		self.aruco_msg = None
 		self.aruco_received = False
 		self.aruco_list=ArucoList()
+		self.markers_estimation=[None]*self.aruco_list.get_size()
 		self.listener=tf.TransformListener()
 
 		rospy.loginfo('Initializing kalman filter node')
 
 
-		rospy.Subscriber('/aruco_marker_publisher/markers', MarkerArray, self.arucoCallback)
+		rospy.Subscriber('/aruco_marker_publisher/markers', MarkerArray, self.aruco_callback)
 
 
-	def arucoCallback(self,msg):
+	def aruco_callback(self,msg):
 		self.aruco_msg=msg
 		self.aruco_received=True
-		#rospy.loginfo('%d Aruco(s) detected!'%(len(self.aruco_msg.markers)))
+		rospy.loginfo('%d Aruco(s) detected!'%(len(self.aruco_msg.markers)))
 
-	def start_kalman_filter(self):
+	def start_perception(self):
 		while not rospy.is_shutdown():
 			if self.aruco_received==True:
 				self.aruco_received=False
-				self.get_pose_arucos()
+				self.aruco_list.cleanList()
+				self.create_detection_list()
+				self.start_kalman_filter()
 
-	def get_pose_arucos(self):
+	def start_kalman_filter(self):
+		
+
+	def create_detection_list(self):
 
 		for i in self.aruco_msg.markers:
 			object_pose_in= PoseStamped()
@@ -49,15 +66,20 @@ class KalmanFilter():
 			y=object_pose_bl.pose.position.y
 			(roll,pitch,yaw) = euler_from_quaternion([object_pose_bl.pose.orientation.x, object_pose_bl.pose.orientation.y, object_pose_bl.pose.orientation.z, object_pose_bl.pose.orientation.w])		
 			
+<<<<<<< HEAD
 			self.aruco_list.insert_marker(aruco_id,x,y,yaw)
 			print ("\n X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f \n"%(x, y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
+=======
+			self.aruco_list.insert_marker(aruco_id,x,y)
+			#print ("\n Roll=%f | Pitch=%f | Yaw=%f \n"%(roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
+>>>>>>> origin/miguel
 
 def main():
 	
 	#inicialization of the node for the kalman filter
 	rospy.init_node('kalman_filter_node', anonymous=False)
 	kalman_filter_executor= KalmanFilter()
-	kalman_filter_executor.start_kalman_filter()
+	kalman_filter_executor.start_perception()
 
 if __name__ == '__main__':
 	main()
