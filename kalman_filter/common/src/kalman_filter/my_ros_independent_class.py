@@ -18,30 +18,12 @@ class ArucoInfo():
 		return self.y
 	def get_alfa(self):
 		return self.alfa
+	def get_measurement(self):
+		return self.x, self.y, self.alfa
 	def __repr__(self):
 		return "id:%d x:%f y:%f alfa:%f"%(self.get_id(),self.get_x(),self.get_y(),self.get_alfa())
 
-	def ekfupdate(state, measurement, pose, expectedValue, cov):
-
-		#H matrix
-		alfaPose=state[2]
-		h=np.matrix([[math.cos(alfaPose), math.sin(alfaPose), 0], [-math.sin(alfaPose), math.cos(alfaPose), 0], [0, 0, 1]])
-
-		#Motion model
-		motionModel=state
-
-		#Observation model
-		measureModel=-pose+h.dot(state)
-		measureCov=np.identity(3)
-
-		#Prediction step
-		predExpectedValue=expectedValue
-		predCov=cov 
-
-		#Update step
-		kalmanGain=predCov.dot(h.transpose()).dot(np.linalg.inv(h.dot(predCov).dot(h.transpose()).dot(measureCov)))
-		updateExpectedValue=predExpectedValue+kalmanGain.dot(measurement-measureModel)
-		updateCov=(np.identity(3)-kalmanGain.dot(h)).dot(predCov)
+	
 
 
 class ArucoList():
