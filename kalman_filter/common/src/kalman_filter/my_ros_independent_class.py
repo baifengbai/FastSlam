@@ -30,7 +30,7 @@ class ArucoList():
 	def insert_marker(self, aruco_id, x, y, alfa):
 		new_aruco=ArucoInfo(aruco_id, x, y, alfa);
 		self.aruco_list[aruco_id]=new_aruco
-		print(self.aruco_list)
+		#print(self.aruco_list)
 	def __str__(self):
 		for i in self.aruco_list:
 			print (i)
