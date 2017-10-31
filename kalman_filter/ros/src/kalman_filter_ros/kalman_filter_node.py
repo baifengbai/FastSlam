@@ -20,18 +20,18 @@ class MarkerEstimation():
 		self.orientation=alpha
 		self.covariance=numpy.identity(3)
 
-	def get_state(self)
+	def get_state(self):
 		return self.x, self.y, self.orientation
 
-	def get_cov(self)
+	def get_cov(self):
 		return self.covariance
 
-	def set_state(self, new_state)
+	def set_state(self, new_state):
 		self.x=new_state[0]
 		self.y=new_state[1]
 		self.orientation=new_state[2]
 
-	def set_cov(self, new_cov)
+	def set_cov(self, new_cov):
 		self.covariance=new_cov
 
 class KalmanFilter():
@@ -64,9 +64,9 @@ class KalmanFilter():
 
 	def start_kalman_filter(self):
 		for i in self.aruco_list:
-			if self.markers_estimation[i.get_id]==None
+			if self.markers_estimation[i.get_id]==None:
 				self.markers_estimation[i.get_id]=MarkerEstimation(i.get_x(), i.get_y())
-			else
+			else:
 				now=rospy.Time.now()
 				self.listener.waitForTransform("/odom", "/base_link", now, rospy.Duration(1.0))
 				robot_pose=self.listener.transformPose("/odom","/base_link")
