@@ -42,15 +42,15 @@ class KalmanFilter():
 			object_pose_in.header.frame_id="/camera_rgb_optical_frame"
 			object_pose_in.pose=i.pose.pose
 			aruco_id=i.id
-			#now=rospy.Time.now()
-			#self.listener.waitForTransform("/odom", "/camera_rgb_optical_frame", now, rospy.Duration(1.0))
-			object_pose_bl=self.listener.transformPose("/base_link",object_pose_in)
+			now=rospy.Time.now()
+			self.listener.waitForTransform("/odom", "/camera_rgb_optical_frame", now, rospy.Duration(1.0))
+			object_pose_bl=self.listener.transformPose("/odom",object_pose_in)
 			x=object_pose_bl.pose.position.x
 			y=object_pose_bl.pose.position.y
 			(roll,pitch,yaw) = euler_from_quaternion([object_pose_bl.pose.orientation.x, object_pose_bl.pose.orientation.y, object_pose_bl.pose.orientation.z, object_pose_bl.pose.orientation.w])		
 			
 			self.aruco_list.insert_marker(aruco_id,x,y,yaw)
-			print ("\n Roll=%f | Pitch=%f | Yaw=%f \n"%(roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
+			print ("\n X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f \n"%(x, y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
 
 def main():
 	
