@@ -46,6 +46,9 @@ class ArucoList():
 	def get_size(self):
 		return self.size
 
+	def get_list(self):
+		return self.aruco_list
+
 
 
 

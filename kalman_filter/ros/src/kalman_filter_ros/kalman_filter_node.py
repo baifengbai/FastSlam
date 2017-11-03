@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import numpy as np
 import numpy
 import rospy
 import math
@@ -13,26 +14,56 @@ from geometry_msgs.msg import *
 
 class MarkerEstimation():
 
-	def __init__(self,x,y,alpha=0):
-		self.id
+	def __init__(self,aid,x,y,alpha=0):
+		self.id=aid
 		self.x=x
 		self.y=y
 		self.orientation=alpha
 		self.covariance=numpy.identity(3)
 
-	def get_state(self)
-		return self.x, self.y, self.orientation
+	def get_state(self):
+		return np.matrix([self.x, self.y, self.orientation])
 
-	def get_cov(self)
+	def get_cov(self):
 		return self.covariance
 
-	def set_state(self, new_state)
-		self.x=new_state[0]
-		self.y=new_state[1]
-		self.orientation=new_state[2]
+	def set_state(self, new_state):
+		self.x=new_state[0,0]
+		self.y=new_state[1,0]
+		self.orientation=new_state[2,0]
 
-	def set_cov(self, new_cov)
+	def set_cov(self, new_cov):
 		self.covariance=new_cov
+
+	def ekfupdate(self, measurement, pose):
+
+		state=np.transpose(self.get_state())
+		cov=self.get_cov()
+
+		#H matrix
+		alfaPose=pose[2]
+		h=np.matrix([[math.cos(alfaPose), math.sin(alfaPose), 0], [-math.sin(alfaPose), math.cos(alfaPose), 0], [0, 0, 1]])
+
+		#Motion model
+		motionModel=state
+
+		#Observation model
+		measureModel=h.dot(state) - pose
+		measureCov=np.identity(3)
+
+		#Prediction step
+		predExpectedValue=state
+		predCov=cov 
+
+		#Update step
+		kalmanGain=predCov.dot(h.transpose()).dot(np.linalg.inv(h.dot(predCov).dot(h.transpose()).dot(measureCov)))
+		updateExpectedValue=predExpectedValue+kalmanGain.dot(measurement-measureModel)
+		updateCov=(np.identity(3)-kalmanGain.dot(h)).dot(predCov)
+
+		#Set values
+		self.set_state(updateExpectedValue)
+		self.set_cov(updateCov)
+
 
 class KalmanFilter():
 
@@ -63,14 +94,18 @@ class KalmanFilter():
 				self.start_kalman_filter()
 
 	def start_kalman_filter(self):
-		for i in self.aruco_list:
-			if self.markers_estimation[i.get_id]==None
-				self.markers_estimation[i.get_id]=MarkerEstimation(i.get_x(), i.get_y())
-			else
-				now=rospy.Time.now()
-				self.listener.waitForTransform("/odom", "/base_link", now, rospy.Duration(1.0))
-				robot_pose=self.listener.transformPose("/odom","/base_link")
-				self.markers_estimation[i.get_id].ekfupdate(i.get_measurement(), robot_pose)
+		for i in self.aruco_list.get_list():
+			if i!=None:
+				if self.markers_estimation[i.get_id()]==None:
+					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(), i.get_x(), i.get_y())
+				else:
+					now=rospy.Time.now()
+					self.listener.waitForTransform("/base_link","/odom", now, rospy.Duration(1.0))
+					(robot_position, robot_orientation)=self.listener.lookupTransform("base_link","/odom", now)
+					(robot_alfa, robot_beta, robot_gama)=euler_from_quaternion(robot_orientation)
+					robot_pose=[robot_position[0], robot_position[1], robot_position[2]]
+					#robot_pose=self.listener.transformPose("/odom","/base_link")
+					self.markers_estimation[i.get_id()].ekfupdate(i.get_measurement(), np.transpose(robot_pose))
 		
 
 	def create_detection_list(self):
