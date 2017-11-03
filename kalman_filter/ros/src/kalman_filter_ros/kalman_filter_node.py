@@ -61,13 +61,14 @@ class MarkerEstimation():
 		predCov=cov 
 
 		#Update step
-		kalmanGain=predCov.dot(h.transpose()).dot(np.linalg.inv(h.dot(predCov).dot(h.transpose()).dot(measureCov)))
+		kalmanGain=predCov.dot(h.transpose()).dot(np.linalg.inv(h.dot(predCov).dot(h.transpose())+(measureCov)))
 		updateExpectedValue=predExpectedValue+kalmanGain.dot(measurement-measureModel)
 		updateCov=(np.identity(3)-kalmanGain.dot(h)).dot(predCov)
 
 		#Set values
 		self.set_state(updateExpectedValue)
 		self.set_cov(updateCov)
+		print(updateExpectedValue)
 
 class KalmanFilter():
 
