@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+import numpy as np
 import numpy
 import rospy
 import math
@@ -21,18 +22,52 @@ class MarkerEstimation():
 		self.covariance=numpy.identity(3)
 
 	def get_state(self):
-		return self.x, self.y, self.orientation
+		return np.matrix([self.x, self.y, self.orientation])
 
 	def get_cov(self):
 		return self.covariance
 
 	def set_state(self, new_state):
-		self.x=new_state[0]
-		self.y=new_state[1]
-		self.orientation=new_state[2]
+		self.x=new_state[0,0]
+		self.y=new_state[1,0]
+		self.orientation=new_state[2,0]
 
 	def set_cov(self, new_cov):
 		self.covariance=new_cov
+
+	def ekfupdate(self, measurement, pose):
+
+		state=self.get_state()
+		state=state.T
+		cov=self.get_cov()
+		pose=np.matrix(pose)
+		pose=pose.T
+		measurement=np.matrix(measurement)
+		measurement=measurement.T
+
+		#H matrix
+		alfaPose=pose[2,0]
+		h=np.matrix([[math.cos(alfaPose), math.sin(alfaPose), 0], [-math.sin(alfaPose), math.cos(alfaPose), 0], [0, 0, 1]])
+
+		#Motion model
+		motionModel=state
+
+		#Observation model
+		measureModel=-pose+h.dot(state)
+		measureCov=np.identity(3)
+
+		#Prediction step
+		predExpectedValue=state
+		predCov=cov 
+
+		#Update step
+		kalmanGain=predCov.dot(h.transpose()).dot(np.linalg.inv(h.dot(predCov).dot(h.transpose()).dot(measureCov)))
+		updateExpectedValue=predExpectedValue+kalmanGain.dot(measurement-measureModel)
+		updateCov=(np.identity(3)-kalmanGain.dot(h)).dot(predCov)
+
+		#Set values
+		self.set_state(updateExpectedValue)
+		self.set_cov(updateCov)
 
 class KalmanFilter():
 
@@ -69,8 +104,11 @@ class KalmanFilter():
 					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),i.get_x(), i.get_y())
 				else:
 					now=rospy.Time.now()
-					self.listener.waitForTransform("/odom", "/base_link", now, rospy.Duration(1.0))
-					robot_pose=self.listener.transformPose("/odom","/base_link")
+					self.listener.waitForTransform("/base_link", "/odom", now, rospy.Duration(1.0))
+					(robot_position, robot_orientation)=self.listener.lookupTransform("/base_link", "/odom", now)
+					(robot_alfa, robot_beta, robot_gama)=euler_from_quaternion(robot_orientation)
+					robot_pose=(robot_position[0], robot_position[1], robot_alfa)
+					#robot_pose=self.listener.transformPose("/odom","/base_link")
 					self.markers_estimation[i.get_id()].ekfupdate(i.get_measurement(), robot_pose)
 			
 
@@ -92,34 +130,7 @@ class KalmanFilter():
 			self.aruco_list.insert_marker(aruco_id,x,y,yaw)
 			print ("\n X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f \n"%(x, y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
 
-	def ekfupdate(self, measurement, pose):
-
-		state=self.get_state()
-		cov=self.get_cov()
-
-		#H matrix
-		alfaPose=pose[2]
-		h=np.matrix([[math.cos(alfaPose), math.sin(alfaPose), 0], [-math.sin(alfaPose), math.cos(alfaPose), 0], [0, 0, 1]])
-
-		#Motion model
-		motionModel=state
-
-		#Observation model
-		measureModel=-pose+h.dot(state)
-		measureCov=np.identity(3)
-
-		#Prediction step
-		predExpectedValue=state
-		predCov=cov 
-
-		#Update step
-		kalmanGain=predCov.dot(h.transpose()).dot(np.linalg.inv(h.dot(predCov).dot(h.transpose()).dot(measureCov)))
-		updateExpectedValue=predExpectedValue+kalmanGain.dot(measurement-measureModel)
-		updateCov=(np.identity(3)-kalmanGain.dot(h)).dot(predCov)
-
-		#Set values
-		self.set_state(updateExpectedValue)
-		self.set_cov(updateCov)
+	
 
 
 def main():
