@@ -48,7 +48,3 @@ class ArucoList():
 
 	def get_list(self):
 		return self.aruco_list
-
-
-
-
