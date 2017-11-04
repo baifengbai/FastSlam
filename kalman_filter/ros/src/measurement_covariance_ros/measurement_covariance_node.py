@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import math
 from aruco_msgs.msg import MarkerArray	
@@ -5,6 +6,7 @@ import rospy
 import tf
 from geometry_msgs.msg import *
 from tf.transformations import euler_from_quaternion
+
 
 class Covariance():
 
@@ -29,10 +31,20 @@ class Covariance():
 		self.listener = tf.TransformListener()
 
 	def start_perception(self):
-			while not rospy.is_shutdown():
-				if self.aruco_received==True:
+			start_time=rospy.Time.now()
+			current_time=rospy.Time(0)
+			counter=0
+			counter2=0
+			while counter<=100:
+				print("Aruco received: %d"%(self.aruco_received))
+				if self.aruco_received==True and counter2 >200:
 					self.aruco_received=False
 					self.add_detection()
+					print("entrei")
+					counter=counter+1
+				counter2=counter2+1
+				print("Iteration: %d"%(counter))
+					
 
 	def add_detection(self):
 		for i in self.aruco_msg.markers:
@@ -50,17 +62,20 @@ class Covariance():
 					(roll,pitch,yaw) = tf.transformations.euler_from_quaternion([object_pose_bl.pose.orientation.x, object_pose_bl.pose.orientation.y, object_pose_bl.pose.orientation.z, object_pose_bl.pose.orientation.w])		
 					#add the new observation to the matrix of observations
 					if self.obsr_vectors.size==0:
+						print("BOOOOOOOOOOOMBAAA")
 						self.obsr_vectors=np.array([x,y,yaw])
 						self.obsr_vectors.shape = (3,1)
 					else:
-						np.c_[self.obsr_vectors,[x,y,yaw]] 
+						self.obsr_vectors=np.c_[self.obsr_vectors,[x,y,yaw]] 
+						print("!!!!!!!!!!CONCATENA-LOS TODOS!!!!!!!!!!!!")
+						print(self.obsr_vectors)
 
 
 	def aruco_callback(self,msg):
 		self.aruco_msg=msg
 		self.aruco_received=True
 
-	def get_obsr_vectores(self):
+	def get_obsr_vectors(self):
 		return self.obsr_vectors
 
 def main():
@@ -69,7 +84,11 @@ def main():
 	rospy.init_node('measurement_covariance_node', anonymous=False)
 	cov= Covariance()
 	cov.start_perception()
+	print("CURTO XOTA")
+	print(cov.get_obsr_vectors())
 	cov = np.cov(cov.get_obsr_vectors())
+	print("Ai vai ela: ", end="")
+	print(cov)
 	rospy.set_param('measurement_covariance', cov.tolist())
 
 if __name__ == '__main__':
