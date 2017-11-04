@@ -19,13 +19,19 @@ class MarkerEstimation():
 		self.x=x
 		self.y=y
 		self.orientation=alpha
-		self.covariance=numpy.identity(3)*0
+		self.covariance=numpy.identity(3)*0.000001
+
+	def __str__(self):
+		return "id:%d x:%f y:%f alfa:%f"%(self.get_id(),self.get_state()[0,0],self.get_state()[0,1],self.get_state()[0,2])
 
 	def get_state(self):
 		return np.matrix([self.x, self.y, self.orientation])
 
 	def get_cov(self):
 		return self.covariance
+
+	def get_id(self):
+		return self.id
 
 	def set_state(self, new_state):
 		self.x=new_state[0,0]
@@ -54,7 +60,7 @@ class MarkerEstimation():
 
 		#Observation model
 		measureModel=-pose+h.dot(state)
-		measureCov=np.identity(3)*0.001
+		measureCov=np.identity(3)*0.1
 
 		#Prediction step
 		predExpectedValue=state
@@ -68,8 +74,8 @@ class MarkerEstimation():
 		#Set values
 		self.set_state(updateExpectedValue)
 		self.set_cov(updateCov)
-		print(updateExpectedValue)
-		print(updateCov)
+		#print(updateExpectedValue)
+		#print(updateCov)
 
 class KalmanFilter():
 
@@ -79,6 +85,7 @@ class KalmanFilter():
 		self.aruco_list=ArucoList()
 		self.markers_estimation=[None]*self.aruco_list.get_size()
 		self.listener=tf.TransformListener()
+		self.marker_publisher=rospy.Publisher('marker_estimations', PoseArray, queue_size=10)
 
 		rospy.loginfo('Initializing kalman filter node')
 
@@ -103,30 +110,15 @@ class KalmanFilter():
 		for i in self.aruco_list.get_list():
 			if i!=None:
 				if self.markers_estimation[i.get_id()]==None:
-					aruco_pose_in= PoseStamped()
-					aruco_pose_in.header.stamp=rospy.Time.now()
-					aruco_pose_in.header.frame_id="/camera_rgb_optical_frame"
-					aruco_pose_in.pose.position.x=i.get_measurement()[0]
-					aruco_pose_in.pose.position.y=i.get_measurement()[1]
-					aruco_pose_in.pose.position.z=0.275
-					aruco_pose_in.pose.orientation.x=0
-					aruco_pose_in.pose.orientation.y=0
-					aruco_pose_in.pose.orientation.z=0
-					aruco_pose_in.pose.orientation.w=0
-					now=rospy.Time.now()
-					self.listener.waitForTransform("/odom", "/camera_rgb_optical_frame", now, rospy.Duration(1.0))
-					aruco_pose_bl=self.listener.transformPose("/odom",aruco_pose_in)
-					x=aruco_pose_bl.pose.position.x
-					y=aruco_pose_bl.pose.position.y
-					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),x, y)
+					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),i.get_pose_world()[0], i.get_pose_world()[1])
 				else:
 					now=rospy.Time.now()
 					self.listener.waitForTransform("/base_link", "/odom", now, rospy.Duration(1.0))
 					(robot_position, robot_orientation)=self.listener.lookupTransform("/base_link", "/odom", now)
 					(robot_alfa, robot_beta, robot_gama)=euler_from_quaternion(robot_orientation)
 					robot_pose=(robot_position[0], robot_position[1], robot_alfa)
-					#robot_pose=self.listener.transformPose("/odom","/base_link")
 					self.markers_estimation[i.get_id()].ekfupdate(i.get_measurement(), robot_pose)
+					self.markers_publisher()
 			
 
 	def create_detection_list(self):
@@ -140,14 +132,40 @@ class KalmanFilter():
 			now=rospy.Time.now()
 			self.listener.waitForTransform("/odom", "/camera_rgb_optical_frame", now, rospy.Duration(1.0))
 			object_pose_bl=self.listener.transformPose("/odom",object_pose_in)
-			x=i.pose.pose.position.x
-			y=i.pose.pose.position.y
+			object_pose_cam=self.listener.transformPose("/camera_rgb_frame", object_pose_in)
+			x=object_pose_cam.pose.position.x
+			y=object_pose_cam.pose.position.y
 			(roll,pitch,yaw) = euler_from_quaternion([i.pose.pose.orientation.x, i.pose.pose.orientation.y, i.pose.pose.orientation.z, i.pose.pose.orientation.w])		
 			
-			self.aruco_list.insert_marker(aruco_id,x,y,yaw)
-			print ("World: X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f"%(object_pose_bl.pose.position.x, object_pose_bl.pose.position.y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
-			print ("Camer: X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f"%(x, y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
-	#def markers_publisher(self)
+			self.aruco_list.insert_marker(aruco_id,x,y,yaw, object_pose_bl.pose.position.x, object_pose_bl.pose.position.y, 0)
+			#print ("World: X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f"%(object_pose_bl.pose.position.x, object_pose_bl.pose.position.y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
+			#print ("Camer: X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f"%(x, y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
+	
+	def markers_publisher(self):
+		pose_array=PoseArray()
+		pose_array.header.stamp=rospy.Time.now()
+		pose_array.header.frame_id="/odom"
+		counter=0
+		for i in self.markers_estimation:
+			if i!=None:
+				print(i)
+				mpose=i.get_state()
+				aux_pose=Pose()
+				aux_pose.position.x=mpose[0,0]
+				aux_pose.position.y=mpose[0,1]
+				aux_pose.position.z=0.275
+				aux_pose.orientation.x=0
+				aux_pose.orientation.y=0
+				aux_pose.orientation.z=0
+				aux_pose.orientation.w=0
+				pose_array.poses.append(aux_pose)
+			else:
+				print("markers_estimation[%d] is empty"%(counter))
+			counter=counter+1
+		self.marker_publisher.publish(pose_array)
+
+
+
 
 
 
