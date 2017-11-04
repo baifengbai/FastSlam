@@ -19,7 +19,7 @@ class MarkerEstimation():
 		self.x=x
 		self.y=y
 		self.orientation=alpha
-		self.covariance=numpy.identity(3)
+		self.covariance=numpy.identity(3)*0
 
 	def get_state(self):
 		return np.matrix([self.x, self.y, self.orientation])
@@ -54,7 +54,7 @@ class MarkerEstimation():
 
 		#Observation model
 		measureModel=-pose+h.dot(state)
-		measureCov=np.identity(3)
+		measureCov=np.identity(3)*0.001
 
 		#Prediction step
 		predExpectedValue=state
@@ -69,6 +69,7 @@ class MarkerEstimation():
 		self.set_state(updateExpectedValue)
 		self.set_cov(updateCov)
 		print(updateExpectedValue)
+		print(updateCov)
 
 class KalmanFilter():
 
@@ -102,7 +103,22 @@ class KalmanFilter():
 		for i in self.aruco_list.get_list():
 			if i!=None:
 				if self.markers_estimation[i.get_id()]==None:
-					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),i.get_x(), i.get_y())
+					aruco_pose_in= PoseStamped()
+					aruco_pose_in.header.stamp=rospy.Time.now()
+					aruco_pose_in.header.frame_id="/camera_rgb_optical_frame"
+					aruco_pose_in.pose.position.x=i.get_measurement()[0]
+					aruco_pose_in.pose.position.y=i.get_measurement()[1]
+					aruco_pose_in.pose.position.z=0.275
+					aruco_pose_in.pose.orientation.x=0
+					aruco_pose_in.pose.orientation.y=0
+					aruco_pose_in.pose.orientation.z=0
+					aruco_pose_in.pose.orientation.w=0
+					now=rospy.Time.now()
+					self.listener.waitForTransform("/odom", "/camera_rgb_optical_frame", now, rospy.Duration(1.0))
+					aruco_pose_bl=self.listener.transformPose("/odom",aruco_pose_in)
+					x=aruco_pose_bl.pose.position.x
+					y=aruco_pose_bl.pose.position.y
+					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),x, y)
 				else:
 					now=rospy.Time.now()
 					self.listener.waitForTransform("/base_link", "/odom", now, rospy.Duration(1.0))
@@ -124,14 +140,15 @@ class KalmanFilter():
 			now=rospy.Time.now()
 			self.listener.waitForTransform("/odom", "/camera_rgb_optical_frame", now, rospy.Duration(1.0))
 			object_pose_bl=self.listener.transformPose("/odom",object_pose_in)
-			x=object_pose_bl.pose.position.x
-			y=object_pose_bl.pose.position.y
-			(roll,pitch,yaw) = euler_from_quaternion([object_pose_bl.pose.orientation.x, object_pose_bl.pose.orientation.y, object_pose_bl.pose.orientation.z, object_pose_bl.pose.orientation.w])		
+			x=i.pose.pose.position.x
+			y=i.pose.pose.position.y
+			(roll,pitch,yaw) = euler_from_quaternion([i.pose.pose.orientation.x, i.pose.pose.orientation.y, i.pose.pose.orientation.z, i.pose.pose.orientation.w])		
 			
 			self.aruco_list.insert_marker(aruco_id,x,y,yaw)
-			print ("\n X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f \n"%(x, y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
+			print ("World: X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f"%(object_pose_bl.pose.position.x, object_pose_bl.pose.position.y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
+			print ("Camer: X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f"%(x, y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
+	#def markers_publisher(self)
 
-	
 
 
 def main():
