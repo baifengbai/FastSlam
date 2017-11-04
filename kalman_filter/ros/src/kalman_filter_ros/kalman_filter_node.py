@@ -113,8 +113,8 @@ class KalmanFilter():
 				if self.markers_estimation[i.get_id()]==None:
 					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),i.get_pose_world()[0], i.get_pose_world()[1])
 				else:
-					now=rospy.Time.now()
-					self.listener.waitForTransform("/base_link", "/odom", now, rospy.Duration(1.0))
+					now=rospy.Time()
+					#self.listener.waitForTransform("/base_link", "/odom", now, rospy.Duration(1.0))
 					(robot_position, robot_orientation)=self.listener.lookupTransform("/base_link", "/odom", now)
 					(robot_alfa, robot_beta, robot_gama)=euler_from_quaternion(robot_orientation)
 					robot_pose=(robot_position[0], robot_position[1], robot_alfa)
@@ -125,12 +125,12 @@ class KalmanFilter():
 
 		for i in self.aruco_msg.markers:
 			object_pose_in= PoseStamped()
-			object_pose_in.header.stamp=rospy.Time.now()
+			#object_pose_in.header.stamp=rospy.Time.now()
 			object_pose_in.header.frame_id="/camera_rgb_optical_frame"
 			object_pose_in.pose=i.pose.pose
 			aruco_id=i.id
-			now=rospy.Time.now()
-			self.listener.waitForTransform("/odom", "/camera_rgb_optical_frame", now, rospy.Duration(1.0))
+			#now=rospy.Time.now()
+			#self.listener.waitForTransform("/odom", "/camera_rgb_optical_frame", now, rospy.Duration(1.0))
 			object_pose_bl=self.listener.transformPose("/odom",object_pose_in)
 			object_pose_cam=self.listener.transformPose("/camera_rgb_frame", object_pose_in)
 			x=object_pose_cam.pose.position.x
@@ -165,7 +165,12 @@ class KalmanFilter():
 		self.marker_publisher.publish(pose_array)
 
 
-
+def publish_map():
+	map_publisher=rospy.Publisher('map_arucos', PoseArray, queue_size=10)
+	map_array=PoseArray()
+	map_array.header.stamp=rospy.Time.now()
+	map_array.header.frame_id="/odom"
+	
 
 
 
@@ -173,6 +178,7 @@ def main():
 	
 	#inicialization of the node for the kalman filter
 	rospy.init_node('kalman_filter_node', anonymous=False)
+
 	kalman_filter_executor= KalmanFilter()
 	kalman_filter_executor.start_perception()
 
