@@ -44,6 +44,7 @@ class MarkerEstimation():
 
 	def ekfupdate(self, measurement, pose):
 
+
 		state=self.get_state()
 		state=state.T
 		cov=self.get_cov()
@@ -130,7 +131,6 @@ class KalmanFilter():
 					print("  | State: ", end="")
 					print(i.get_pose_world())
 					self.markers_publisher()
-			
 
 	def create_detection_list(self):
 
