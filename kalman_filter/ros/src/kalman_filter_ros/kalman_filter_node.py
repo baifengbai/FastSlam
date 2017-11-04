@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import numpy as np
 import numpy
 import rospy
@@ -60,7 +61,11 @@ class MarkerEstimation():
 
 		#Observation model
 		measureModel=-pose+h.dot(state)
-		measureCov=np.identity(3)*0.1
+		print("Measure Model: ", end="")
+		print(measureModel)
+		#measureCov=np.identity(3)*0.1
+		#measureCov=np.matrix([[1.44433477e-04, 2.37789852e-04, -1.14394555e-03],[2.37789852e-04, 3.06948739e-03, 1.39377945e-02],[-1.14394555e-03, 1.39377945e-02, 3.90728455e+00]])
+		measureCov=np.matrix([[1.44433477e-04, 0, 0],[0, 3.06948739e-03, 0],[0, 0, 3.90728455e+00]])
 
 		#Prediction step
 		predExpectedValue=state
@@ -114,10 +119,16 @@ class KalmanFilter():
 				else:
 					now=rospy.Time()
 					#self.listener.waitForTransform("/base_link", "/odom", now, rospy.Duration(1.0))
-					(robot_position, robot_orientation)=self.listener.lookupTransform("/base_link", "/odom", now)
+					(robot_position, robot_orientation)=self.listener.lookupTransform("/odom", "/base_link", now)
 					(robot_alfa, robot_beta, robot_gama)=euler_from_quaternion(robot_orientation)
 					robot_pose=(robot_position[0], robot_position[1], robot_alfa)
 					self.markers_estimation[i.get_id()].ekfupdate(i.get_measurement(), robot_pose)
+					print("Robot pose: ", end="")
+					print(robot_pose, end="")
+					print("  | Measurement: ", end="")
+					print(i.get_measurement(), end="")
+					print("  | State: ", end="")
+					print(i.get_pose_world())
 					self.markers_publisher()
 			
 
