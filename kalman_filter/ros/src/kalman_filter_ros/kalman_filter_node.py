@@ -18,7 +18,8 @@ class MarkerEstimation():
 		self.y=y
 		self.orientation=alpha
 		#self.covariance=np.identity(2)*0.000001
-		self.covariance=np.matrix([[1.44433477e-04, 2.37789852e-04],[2.37789852e-04, 3.06948739e-03]])
+		#self.covariance=np.matrix([[1.44433477e-04, 2.37789852e-04],[2.37789852e-04, 3.06948739e-03]])
+		self.covariance=np.matrix([[1.48377597e-02, 2.37789852e-04],[2.37789852e-04, 1.47362967e-01]])
 
 	def __str__(self):
 		return "markers_estimation[%d]: x:%f y:%f"%(self.get_id(),self.get_state()[0,0],self.get_state()[0,1])
@@ -74,7 +75,8 @@ class MarkerEstimation():
 		print(measureModel)
 		#measureCov=np.identity(3)*0.1
 		#measureCov=np.matrix([[1.44433477e-04, 2.37789852e-04, -1.14394555e-03],[2.37789852e-04, 3.06948739e-03, 1.39377945e-02],[-1.14394555e-03, 1.39377945e-02, 3.90728455e+00]])
-		measureCov=np.matrix([[1.44433477e-04, 2.37789852e-04],[2.37789852e-04, 3.06948739e-03]])
+		#measureCov=np.matrix([[1.44433477e-04, 2.37789852e-04],[2.37789852e-04, 3.06948739e-03]])
+		measureCov=np.matrix([[1.48377597e-02, 2.37789852e-04],[2.37789852e-04, 1.47362967e-01]])
 
 		#Prediction step
 		predExpectedValue=state
