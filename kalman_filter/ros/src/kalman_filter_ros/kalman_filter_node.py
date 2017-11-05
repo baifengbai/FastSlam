@@ -20,13 +20,14 @@ class MarkerEstimation():
 		self.x=x
 		self.y=y
 		self.orientation=alpha
-		self.covariance=numpy.identity(3)*0.000001
+		#self.covariance=numpy.identity(2)*0.000001
+		self.covariance=np.matrix([[1.44433477e-04, 0],[0, 3.06948739e-03]])
 
 	def __str__(self):
-		return "id:%d x:%f y:%f alfa:%f"%(self.get_id(),self.get_state()[0,0],self.get_state()[0,1],self.get_state()[0,2])
+		return "markers_estimation[%d]: x:%f y:%f"%(self.get_id(),self.get_state()[0,0],self.get_state()[0,1])
 
 	def get_state(self):
-		return np.matrix([self.x, self.y, self.orientation])
+		return np.matrix([self.x, self.y])
 
 	def get_cov(self):
 		return self.covariance
@@ -37,7 +38,6 @@ class MarkerEstimation():
 	def set_state(self, new_state):
 		self.x=new_state[0,0]
 		self.y=new_state[1,0]
-		self.orientation=new_state[2,0]
 
 	def set_cov(self, new_cov):
 		self.covariance=new_cov
@@ -50,29 +50,36 @@ class MarkerEstimation():
 		cov=self.get_cov()
 		pose=np.matrix(pose)
 		pose=pose.T
+		
 		measurement=np.matrix(measurement)
 		measurement=measurement.T
-		measurement[2,0]=0
+		measurement=np.delete(measurement, (2), axis=0)
 		pose_world=np.matrix(pose_world)
 		pose_world=pose_world.T
+		pose_world=np.delete(pose_world, (2), axis=0)
+		print("Pose world: ")
+		print(pose_world)
+		print("Robot pose: ")
+		print(pose)
 
 		#H matrix
 		alfaPose=pose[2,0]
-		h=np.matrix([[math.cos(alfaPose), math.sin(alfaPose), 0], [-math.sin(alfaPose), math.cos(alfaPose), 0], [0, 0, 1]])
+		pose=np.delete(pose, (2), axis=0)
+		h=np.matrix([[math.cos(alfaPose), math.sin(alfaPose)], [-math.sin(alfaPose), math.cos(alfaPose)]])
+		#h=np.identity(2)
 
 		#Motion model
 		motionModel=state
 
 		#Observation model
-		measureModel=pose+h.dot(pose_world)
-		measureModel[2,0]=0
-		print("Pose world: ", end="")
-		print(pose_world)
-		print("Measure Model: ", end="")
+		measureModel=h.dot(state-pose)
+		#measureModel[2,0]=0
+		
+		print("Measure Model: ")
 		print(measureModel)
 		#measureCov=np.identity(3)*0.1
 		#measureCov=np.matrix([[1.44433477e-04, 2.37789852e-04, -1.14394555e-03],[2.37789852e-04, 3.06948739e-03, 1.39377945e-02],[-1.14394555e-03, 1.39377945e-02, 3.90728455e+00]])
-		measureCov=np.matrix([[1.44433477e-04, 0, 0],[0, 3.06948739e-03, 0],[0, 0, 3.90728455e+00]])
+		measureCov=np.matrix([[1.44433477e-04, 0],[0, 3.06948739e-03]])
 
 		#Prediction step
 		predExpectedValue=state
@@ -81,7 +88,7 @@ class MarkerEstimation():
 		#Update step
 		kalmanGain=predCov.dot(h.transpose()).dot(np.linalg.inv(h.dot(predCov).dot(h.transpose())+(measureCov)))
 		updateExpectedValue=predExpectedValue+kalmanGain.dot(measurement-measureModel)
-		updateCov=(np.identity(3)-kalmanGain.dot(h)).dot(predCov)
+		updateCov=(np.identity(2)-kalmanGain.dot(h)).dot(predCov)
 
 		#Set values
 		self.set_state(updateExpectedValue)
@@ -98,6 +105,7 @@ class KalmanFilter():
 		self.markers_estimation=[None]*self.aruco_list.get_size()
 		self.listener=tf.TransformListener()
 		self.marker_publisher=rospy.Publisher('marker_estimations', PoseArray, queue_size=10)
+		self.transformer=tf.TransformerROS()
 
 		rospy.loginfo('Initializing kalman filter node')
 
@@ -126,16 +134,23 @@ class KalmanFilter():
 				else:
 					now=rospy.Time()
 					#self.listener.waitForTransform("/base_link", "/odom", now, rospy.Duration(1.0))
-					(robot_position, robot_orientation)=self.listener.lookupTransform("/base_link", "/odom", now)
+					(robot_position, robot_orientation)=self.listener.lookupTransform("/odom", "/base_link", now)
+					#(ht, hr)=self.listener.lookupTransform("/base_link", "/odom", now)
+					#matrizh=self.transformer.fromTranslationRotation(ht, hr)
+					#matrizh2=self.transformer.fromTranslationRotation(robot_position, robot_orientation)
+					#print("Matriz H (base_link, odom):")
+					#print(matrizh)
+					#print("Matriz H (odom, base_link):")
+					#print(matrizh2)
 					(robot_alfa, robot_beta, robot_gama)=euler_from_quaternion(robot_orientation)
 					robot_pose=(robot_position[0], robot_position[1], robot_gama)
 					self.markers_estimation[i.get_id()].ekfupdate(i.get_measurement(), robot_pose, i.get_pose_world())
-					print("Robot pose: ", end="")
-					print(robot_pose, end="")
+					#print("Robot pose: ", end="")
+					#print(robot_pose, end="")
 					print("  | Measurement: ", end="")
-					print(i.get_measurement(), end="")
-					print("  | State: ", end="")
-					print(i.get_pose_world())
+					print(i.get_measurement())
+					#print("  | State: ", end="")
+					#print(i.get_pose_world())
 					self.markers_publisher()
 
 	def create_detection_list(self):
