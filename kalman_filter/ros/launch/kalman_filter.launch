@@ -5,6 +5,6 @@
  
  <node pkg="rostopic" type="rostopic" name="rostopic_markers_map" args="pub markers_map geometry_msgs/PoseArray -f $(find kalman_filter)/ros/config/config_kalman_filter.yaml" output="screen"/>
 
- <node name="kalman_filter" pkg="kalman_filter" type="kalman_filter_node" />
+ <node name="kalman_filter" pkg="kalman_filter" type="kalman_filter_node" output="screen"/>
 
 </launch>
