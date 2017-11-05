@@ -55,11 +55,14 @@ class Covariance():
 					object_pose_in.header.stamp=rospy.Time()
 					object_pose_in.header.frame_id="/camera_rgb_optical_frame"
 					object_pose_in.pose=i.pose.pose
-					object_pose_bl=self.listener.transformPose("/odom",object_pose_in)
-					
-					x=object_pose_bl.pose.position.x
-					y=object_pose_bl.pose.position.y
-					(roll,pitch,yaw) = tf.transformations.euler_from_quaternion([object_pose_bl.pose.orientation.x, object_pose_bl.pose.orientation.y, object_pose_bl.pose.orientation.z, object_pose_bl.pose.orientation.w])		
+					#object_pose_bl=self.listener.transformPose("/odom",object_pose_in)
+					object_pose_cam=self.listener.transformPose("/camera_rgb_frame", object_pose_in)
+
+					x=object_pose_cam.pose.position.x
+					y=object_pose_cam.pose.position.y
+
+					(roll,pitch,yaw) = tf.transformations.euler_from_quaternion([object_pose_cam.pose.orientation.x, object_pose_cam.pose.orientation.y, object_pose_cam.pose.orientation.z, object_pose_cam.pose.orientation.w])		
+					#(roll,pitch,yaw) = tf.transformations.euler_from_quaternion([object_pose_bl.pose.orientation.x, object_pose_bl.pose.orientation.y, object_pose_bl.pose.orientation.z, object_pose_bl.pose.orientation.w])		
 					#add the new observation to the matrix of observations
 					if self.obsr_vectors.size==0:
 						print("BOOOOOOOOOOOMBAAA")
