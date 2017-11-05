@@ -63,14 +63,12 @@ class MarkerEstimation():
 		alfaPose=pose[2,0]
 		pose=np.delete(pose, (2), axis=0)
 		h=np.matrix([[math.cos(alfaPose), math.sin(alfaPose)], [-math.sin(alfaPose), math.cos(alfaPose)]])
-		#h=np.identity(2)
 
 		#Motion model
 		motionModel=state
 
 		#Observation model
 		measureModel=h.dot(state-pose)
-		#measureModel[2,0]=0
 		
 		print("Measure Model: ")
 		print(measureModel)
@@ -125,12 +123,16 @@ class KalmanFilter():
 
 	def start_kalman_filter(self):
 		for i in self.aruco_list.get_list():
-			if i!=None:
+			if i!=None: #for all arucos being observed
 				if self.markers_estimation[i.get_id()]==None:
+					#if it's the first sighting of that aruco its position is initialized
 					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),i.get_pose_world()[0], i.get_pose_world()[1])
 				else:
+					#if there's already an estimate for that aruco's position, a kalman filter update is performed
 					now=rospy.Time()
 					#self.listener.waitForTransform("/base_link", "/odom", now, rospy.Duration(1.0))
+
+					#robot pose in the world frame:
 					(robot_position, robot_orientation)=self.listener.lookupTransform("/odom", "/base_link", now)
 					#(ht, hr)=self.listener.lookupTransform("/base_link", "/odom", now)
 					#matrizh=self.transformer.fromTranslationRotation(ht, hr)
@@ -141,6 +143,8 @@ class KalmanFilter():
 					#print(matrizh2)
 					(robot_alfa, robot_beta, robot_gama)=tf.transformations.euler_from_quaternion(robot_orientation)
 					robot_pose=(robot_position[0], robot_position[1], robot_gama)
+
+					#kalman filter update
 					self.markers_estimation[i.get_id()].ekfupdate(i.get_measurement(), robot_pose, i.get_pose_world())
 					#print("Robot pose: ", end="")
 					#print(robot_pose, end="")
@@ -151,30 +155,40 @@ class KalmanFilter():
 					self.markers_publisher()
 
 	def create_detection_list(self):
-
+		#stores every aruco being observed in an ArucoList:
 		for i in self.aruco_msg.markers:
+			#creating a PoseStamped object to store the aruco pose:
 			object_pose_in= PoseStamped()
 			#object_pose_in.header.stamp=rospy.Time.now()
+			#the reference frame is the camera optical frame
 			object_pose_in.header.frame_id="/camera_rgb_optical_frame"
 			object_pose_in.pose=i.pose.pose
 			aruco_id=i.id
 			#now=rospy.Time.now()
 			#self.listener.waitForTransform("/odom", "/camera_rgb_optical_frame", now, rospy.Duration(1.0))
+
+			#transforms the aruco pose in the optical frame to the world frame (for debugging purposes)
 			object_pose_bl=self.listener.transformPose("/odom",object_pose_in)
+
+			#transforms the aruco pose in the optical frame to the "standard" camera frame
 			object_pose_cam=self.listener.transformPose("/camera_rgb_frame", object_pose_in)
 			x=object_pose_cam.pose.position.x
 			y=object_pose_cam.pose.position.y
 			(roll,pitch,yaw) = tf.transformations.euler_from_quaternion([i.pose.pose.orientation.x, i.pose.pose.orientation.y, i.pose.pose.orientation.z, i.pose.pose.orientation.w])		
 			
+			#stores the aruco in the list
 			self.aruco_list.insert_marker(aruco_id,x,y,yaw, object_pose_bl.pose.position.x, object_pose_bl.pose.position.y, 0)
 			#print ("World: X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f"%(object_pose_bl.pose.position.x, object_pose_bl.pose.position.y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
 			#print ("Camer: X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f"%(x, y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
 	
 	def markers_publisher(self):
+		#creating PoseArray object for publication
 		pose_array=PoseArray()
 		pose_array.header.stamp=rospy.Time.now()
 		pose_array.header.frame_id="/odom"
 		counter=0
+
+		#creating a pose in the poses[] list for every aruco position being estimated
 		for i in self.markers_estimation:
 			if i!=None:
 				print(i)
