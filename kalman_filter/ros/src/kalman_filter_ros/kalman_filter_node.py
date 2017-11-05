@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 from __future__ import print_function
 import numpy as np
-import numpy
 import rospy
 import math
 import tf
 from kalman_filter.my_ros_independent_class import ArucoList
-from aruco_msgs.msg import MarkerArray	
-from tf.transformations import euler_from_quaternion
-from tf import TransformListener
+from aruco_msgs.msg import MarkerArray
 from geometry_msgs.msg import *
 
 
@@ -20,7 +17,7 @@ class MarkerEstimation():
 		self.x=x
 		self.y=y
 		self.orientation=alpha
-		#self.covariance=numpy.identity(2)*0.000001
+		#self.covariance=np.identity(2)*0.000001
 		self.covariance=np.matrix([[1.44433477e-04, 0],[0, 3.06948739e-03]])
 
 	def __str__(self):
@@ -142,7 +139,7 @@ class KalmanFilter():
 					#print(matrizh)
 					#print("Matriz H (odom, base_link):")
 					#print(matrizh2)
-					(robot_alfa, robot_beta, robot_gama)=euler_from_quaternion(robot_orientation)
+					(robot_alfa, robot_beta, robot_gama)=tf.transformations.euler_from_quaternion(robot_orientation)
 					robot_pose=(robot_position[0], robot_position[1], robot_gama)
 					self.markers_estimation[i.get_id()].ekfupdate(i.get_measurement(), robot_pose, i.get_pose_world())
 					#print("Robot pose: ", end="")
@@ -167,7 +164,7 @@ class KalmanFilter():
 			object_pose_cam=self.listener.transformPose("/camera_rgb_frame", object_pose_in)
 			x=object_pose_cam.pose.position.x
 			y=object_pose_cam.pose.position.y
-			(roll,pitch,yaw) = euler_from_quaternion([i.pose.pose.orientation.x, i.pose.pose.orientation.y, i.pose.pose.orientation.z, i.pose.pose.orientation.w])		
+			(roll,pitch,yaw) = tf.transformations.euler_from_quaternion([i.pose.pose.orientation.x, i.pose.pose.orientation.y, i.pose.pose.orientation.z, i.pose.pose.orientation.w])		
 			
 			self.aruco_list.insert_marker(aruco_id,x,y,yaw, object_pose_bl.pose.position.x, object_pose_bl.pose.position.y, 0)
 			#print ("World: X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f"%(object_pose_bl.pose.position.x, object_pose_bl.pose.position.y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
