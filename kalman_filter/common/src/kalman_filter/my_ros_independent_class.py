@@ -12,7 +12,7 @@ class ArucoInfo():
 		self.x_world=arucox_world
 		self.y_world=arucoy_world
 		self.alfa_world=arucoAlfa_world
-		arucoPose=[self.x, self.y, self.alfa]
+
 	def get_id(self):
 		return self.id
 	def get_x(self):
