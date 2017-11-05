@@ -4,7 +4,8 @@ import numpy as np
 import rospy
 import math
 import tf
-from kalman_filter.my_ros_independent_class import ArucoList
+#from particle_filter.my_ros_independent_class import my_generic_sum_function
+#from kalman_filter.my_ros_independent_class import ArucoList
 from aruco_msgs.msg import MarkerArray
 from geometry_msgs.msg import *
 
@@ -46,3 +47,4 @@ def main():
 
 if __name__ == '__main__':
 	main()
+

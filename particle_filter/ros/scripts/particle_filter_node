@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+import particle_filter_ros.particle_filter_node
+
+if __name__ == '__main__':
+ particle_filter_ros.particle_filter_node.main()
