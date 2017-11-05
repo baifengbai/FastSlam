@@ -6,9 +6,7 @@ import rospy
 import math
 import tf
 from kalman_filter.my_ros_independent_class import ArucoList
-from aruco_msgs.msg import MarkerArray	
-from tf.transformations import euler_from_quaternion
-from tf import TransformListener
+from aruco_msgs.msg import MarkerArray
 from geometry_msgs.msg import *
 
 
@@ -20,7 +18,9 @@ class MarkerEstimation():
 		self.x=x
 		self.y=y
 		self.orientation=alpha
-		self.covariance=numpy.identity(3)*0.000001
+		#self.covariance=numpy.identity(3)*0.000001
+		self.covariance=np.matrix([[1.48377597e-02,4.80239097e-03,2.62062868e-03],[4.80239097e-03,1.47362967e-01,-2.64674075e-01],[2.62062868e-03,-2.64674075e-01,3.94507665e+00]])
+
 
 	def __str__(self):
 		return "id:%d x:%f y:%f alfa:%f"%(self.get_id(),self.get_state()[0,0],self.get_state()[0,1],self.get_state()[0,2])
@@ -52,7 +52,6 @@ class MarkerEstimation():
 		pose=pose.T
 		measurement=np.matrix(measurement)
 		measurement=measurement.T
-		measurement[2,0]=0
 		pose_world=np.matrix(pose_world)
 		pose_world=pose_world.T
 
@@ -64,15 +63,14 @@ class MarkerEstimation():
 		motionModel=state
 
 		#Observation model
-		measureModel=pose+h.dot(pose_world)
-		measureModel[2,0]=0
+		measureModel=h.dot(pose_world-pose)
 		print("Pose world: ", end="")
 		print(pose_world)
 		print("Measure Model: ", end="")
 		print(measureModel)
 		#measureCov=np.identity(3)*0.1
 		#measureCov=np.matrix([[1.44433477e-04, 2.37789852e-04, -1.14394555e-03],[2.37789852e-04, 3.06948739e-03, 1.39377945e-02],[-1.14394555e-03, 1.39377945e-02, 3.90728455e+00]])
-		measureCov=np.matrix([[1.44433477e-04, 0, 0],[0, 3.06948739e-03, 0],[0, 0, 3.90728455e+00]])
+		measureCov=np.matrix([[1.48377597e-02,4.80239097e-03,2.62062868e-03],[4.80239097e-03,1.47362967e-01,-2.64674075e-01],[2.62062868e-03,-2.64674075e-01,3.94507665e+00]])
 
 		#Prediction step
 		predExpectedValue=state
@@ -122,13 +120,13 @@ class KalmanFilter():
 		for i in self.aruco_list.get_list():
 			if i!=None:
 				if self.markers_estimation[i.get_id()]==None:
-					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),i.get_pose_world()[0], i.get_pose_world()[1])
+					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),i.get_pose_world()[0], i.get_pose_world()[1],i.get_pose_world()[2])
 				else:
 					now=rospy.Time()
 					#self.listener.waitForTransform("/base_link", "/odom", now, rospy.Duration(1.0))
-					(robot_position, robot_orientation)=self.listener.lookupTransform("/base_link", "/odom", now)
-					(robot_alfa, robot_beta, robot_gama)=euler_from_quaternion(robot_orientation)
-					robot_pose=(robot_position[0], robot_position[1], robot_gama)
+					(robot_position, robot_orientation)=self.listener.lookupTransform("/odom", "/base_link", now)
+					(robot_role, robot_pitch, robot_yaw)=tf.transformations.euler_from_quaternion(robot_orientation)
+					robot_pose=(robot_position[0], robot_position[1], robot_yaw)
 					self.markers_estimation[i.get_id()].ekfupdate(i.get_measurement(), robot_pose, i.get_pose_world())
 					print("Robot pose: ", end="")
 					print(robot_pose, end="")
@@ -152,9 +150,10 @@ class KalmanFilter():
 			object_pose_cam=self.listener.transformPose("/camera_rgb_frame", object_pose_in)
 			x=object_pose_cam.pose.position.x
 			y=object_pose_cam.pose.position.y
-			(roll,pitch,yaw) = euler_from_quaternion([i.pose.pose.orientation.x, i.pose.pose.orientation.y, i.pose.pose.orientation.z, i.pose.pose.orientation.w])		
+			(roll,pitch,yaw) = tf.transformations.euler_from_quaternion([object_pose_cam.pose.orientation.x, object_pose_cam.pose.orientation.y, object_pose_cam.pose.orientation.z, object_pose_cam.pose.orientation.w])		
+			(roll_d,pitch_d,yaw_d) = tf.transformations.euler_from_quaternion([object_pose_bl.pose.orientation.x, object_pose_bl.pose.orientation.y, object_pose_bl.pose.orientation.z, object_pose_bl.pose.orientation.w])		
 			
-			self.aruco_list.insert_marker(aruco_id,x,y,yaw, object_pose_bl.pose.position.x, object_pose_bl.pose.position.y, 0)
+			self.aruco_list.insert_marker(aruco_id,x,y,yaw, object_pose_bl.pose.position.x, object_pose_bl.pose.position.y,  yaw_d)
 			#print ("World: X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f"%(object_pose_bl.pose.position.x, object_pose_bl.pose.position.y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
 			#print ("Camer: X=%f | Y=%f | Roll=%f | Pitch=%f | Yaw=%f"%(x, y, roll*180/math.pi, pitch*180/math.pi, yaw*180/math.pi))
 	
@@ -171,24 +170,16 @@ class KalmanFilter():
 				aux_pose.position.x=mpose[0,0]
 				aux_pose.position.y=mpose[0,1]
 				aux_pose.position.z=0.275
-				aux_pose.orientation.x=0
-				aux_pose.orientation.y=0
-				aux_pose.orientation.z=0
-				aux_pose.orientation.w=0
+				quat=tf.transformations.quaternion_from_euler(0,0,mpose[0,2])
+				aux_pose.orientation.x=quat[0]
+				aux_pose.orientation.y=quat[1]
+				aux_pose.orientation.z=quat[2]
+				aux_pose.orientation.w=quat[3]
 				pose_array.poses.append(aux_pose)
 			else:
 				print("markers_estimation[%d] is empty"%(counter))
 			counter=counter+1
 		self.marker_publisher.publish(pose_array)
-
-
-def publish_map():
-	map_publisher=rospy.Publisher('map_arucos', PoseArray, queue_size=10)
-	map_array=PoseArray()
-	map_array.header.stamp=rospy.Time.now()
-	map_array.header.frame_id="/odom"
-	
-
 
 
 def main():
