@@ -7,6 +7,7 @@ from kalman_filter.my_ros_independent_class import ArucoList
 from aruco_msgs.msg import MarkerArray
 from geometry_msgs.msg import *
 
+N_ARUCOS=16
 #Covariance matrix R that represents the covariance of the Gaussian noise of observations
 COVARIANCE_MATRIX=np.matrix([[1.48377597e-02, 2.37789852e-04],[2.37789852e-04, 1.47362967e-01]])
 #COVARIANCE_MATRIX=np.matrix([[1.44433477e-04, 2.37789852e-04],[2.37789852e-04, 3.06948739e-03]])
@@ -68,8 +69,7 @@ class MarkerEstimation():
 		marker_position=marker_position
 
 		#Observation/Measurement model
-		measureModel=h.dot(marker_position-robot_position)
-		
+		measureModel=self.measurement_model(robot_pose,marker_position)
 		print("Measure Model:%s"%(measureModel.T))
 
 		#Prediction step
@@ -84,6 +84,16 @@ class MarkerEstimation():
 		#Update the Covariance and the Expected value of aruco
 		self.update_position(updateExpectedValue)
 		self.update_cov(updateCov)
+	
+	def measurement_model(self,robot_pose,marker_position):
+		#Observation/Measurement model
+
+		#H matrix
+		alfaPose=robot_pose[2,0]
+		robot_position=np.delete(robot_pose, (2), axis=0)
+		h=np.matrix([[math.cos(alfaPose), math.sin(alfaPose)], [-math.sin(alfaPose), math.cos(alfaPose)]])
+
+		return h.dot(marker_position-robot_position)
 
 class KalmanFilter():
 
@@ -105,7 +115,6 @@ class KalmanFilter():
 	def aruco_callback(self,msg):
 		self.aruco_msg=msg
 		self.aruco_received=True
-		rospy.loginfo('%d Aruco(s) detected!'%(len(self.aruco_msg.markers)))
 
 
 	#run a kalman filter for each of the markers being observed
@@ -113,16 +122,15 @@ class KalmanFilter():
 		for i in self.aruco_list.get_list():
 			if i!=None: #for all arucos being observed
 				if self.markers_estimation[i.get_id()]==None:
-					#if it's the first sighting of that aruco its position is initialized with the first observation values
-					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),i.get_measurement()[0], i.get_measurement()[1])
+					#if it's the first sighting of that aruco its position is initialized
+					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),i.get_pose_world()[0], i.get_pose_world()[1])
 				else:
-					#if there's already an estimate for that aruco's position, a kalman filter update is performed
 					#robot pose in the world frame:
 					(robot_position, robot_orientation)=self.listener.lookupTransform("/odom", "/base_link", rospy.Time())
 
 					(robot_role, robot_pich, robot_yaw)=tf.transformations.euler_from_quaternion(robot_orientation)
 					robot_pose=(robot_position[0], robot_position[1], robot_yaw)
-
+					#if there's already an estimate for that aruco's position, a kalman filter update is performed
 					#kalman filter update
 					self.markers_estimation[i.get_id()].ekf_update(i.get_measurement(), robot_pose)
 					print("Measurement: %s"%(i))
@@ -132,22 +140,23 @@ class KalmanFilter():
 	def create_detection_list(self):
 		#stores every aruco being observed in an ArucoList:
 		for i in self.aruco_msg.markers:
-			#creating a PoseStamped object to store the aruco pose:
-			aruco_pose_in= PoseStamped()
-			#the reference frame is the camera optical frame
-			aruco_pose_in.header.frame_id="/camera_rgb_optical_frame"
-			aruco_pose_in.pose=i.pose.pose
 			aruco_id=i.id
+			#ignore the observations of arucos that are not considered
+			if aruco_id<N_ARUCOS:
+				#creating a PoseStamped object to store the aruco pose:
+				aruco_pose_in= PoseStamped()
+				#the reference frame is the camera optical frame
+				aruco_pose_in.header.frame_id="/camera_rgb_optical_frame"
+				aruco_pose_in.pose=i.pose.pose
 
-			#transforms the aruco pose in the optical frame to the "standard" camera frame
-			object_pose_cam=self.listener.transformPose("/camera_rgb_frame", aruco_pose_in)
-			x=object_pose_cam.pose.position.x
-			y=object_pose_cam.pose.position.y
-			(roll,pitch,yaw) = tf.transformations.euler_from_quaternion([object_pose_cam.pose.orientation.x, object_pose_cam.pose.orientation.y, object_pose_cam.pose.orientation.z, object_pose_cam.pose.orientation.w])		
-			
-			#stores the aruco in the list
-			self.aruco_list.insert_marker(aruco_id,x,y,yaw)
-	
+				object_pose_world=self.listener.transformPose("/odom",aruco_pose_in)
+				#transforms the aruco pose in the optical frame to the "standard" camera frame
+				object_pose_cam=self.listener.transformPose("/camera_rgb_frame", aruco_pose_in)
+		
+				#stores the aruco in the list
+				self.aruco_list.insert_marker(aruco_id,object_pose_cam.pose.position.x,object_pose_cam.pose.position.y,0,object_pose_world.pose.position.x,object_pose_world.pose.position.y,0)
+				rospy.loginfo('Aruco %d  detected!'%(aruco_id))
+
 	def markers_publisher(self):
 		#creating PoseArray object for publication
 		pose_array=PoseArray()
