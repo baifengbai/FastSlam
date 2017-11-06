@@ -3,6 +3,8 @@
 import numpy as np
 import math
 
+N_ARUCOS=16
+
 class ArucoInfo():
 	def __init__(self, arucoId, arucox, arucoy, arucoAlfa, arucox_world, arucoy_world, arucoAlfa_world):
 		self.id=arucoId
@@ -32,7 +34,7 @@ class ArucoInfo():
 
 
 class ArucoList():
-	def __init__(self, size=16):
+	def __init__(self, size=N_ARUCOS):
 		self.aruco_list=[None]*size
 		self.size=size
 
