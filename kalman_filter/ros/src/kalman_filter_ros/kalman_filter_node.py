@@ -8,7 +8,7 @@ from aruco_msgs.msg import MarkerArray
 from geometry_msgs.msg import *
 
 #Covariance matrix R that represents the covariance of the Gaussian noise of observations
-COVARIANCE_MATRIX=np.matrix([[1.48377597e-02, 2.37789852e-04],[2.37789852e-04, 1.47362967e-01]])
+COVARIANCE_MATRIX=np.matrix([[1.48377597e-01, 2.37789852e-04],[2.37789852e-04, 1.47362967e-01]])
 #COVARIANCE_MATRIX=np.matrix([[1.44433477e-04, 2.37789852e-04],[2.37789852e-04, 3.06948739e-03]])
 
 class MarkerEstimation():
@@ -102,6 +102,8 @@ class KalmanFilter():
 		#Publisher of arucos position estimation
 		self.marker_publisher=rospy.Publisher('marker_estimations', PoseArray, queue_size=10)
 
+		self.cov_publisher=rospy.Publisher('marker_cov', PoseWithCovarianceStamped, queue_size=10)
+
 	def aruco_callback(self,msg):
 		self.aruco_msg=msg
 		self.aruco_received=True
@@ -121,11 +123,12 @@ class KalmanFilter():
 					(robot_position, robot_orientation)=self.listener.lookupTransform("/odom", "/base_link", rospy.Time())
 
 					(robot_role, robot_pich, robot_yaw)=tf.transformations.euler_from_quaternion(robot_orientation)
-					robot_pose=(robot_position[0], robot_position[1], robot_yaw)
+					robot_pose=(robot_position[0]+np.random.normal(0,0.5), robot_position[1]+np.random.normal(0,0.5), robot_yaw)
 
 					#kalman filter update
 					self.markers_estimation[i.get_id()].ekf_update(i.get_measurement(), robot_pose)
 					print("Measurement: %s"%(i))
+					print(self.markers_estimation[i.get_id()].get_cov())
 
 		self.markers_publisher()
 
@@ -170,6 +173,38 @@ class KalmanFilter():
 				pose_array.poses.append(aux_pose)
 
 		self.marker_publisher.publish(pose_array)
+
+		if self.markers_estimation[0]!=None:
+			covposest=PoseWithCovarianceStamped()
+			covposest.header.stamp=rospy.Time.now()
+			covposest.header.frame_id="/odom"
+			covpose=PoseWithCovariance()
+			mmpose=self.markers_estimation[0].get_position()
+			aaux_pose=Pose()
+			aaux_pose.position.x=mmpose[0,0]
+			aaux_pose.position.y=mmpose[1,0]
+			aaux_pose.position.z=0.275
+			aaux_pose.orientation.x=0
+			aaux_pose.orientation.y=-0.707
+			aaux_pose.orientation.z=0
+			aaux_pose.orientation.w=0.707
+			covpose.pose=aaux_pose
+			covmatrix=self.markers_estimation[0].get_cov()
+			zerosm=np.zeros((6,6))
+			zerosm[0,0]=covmatrix[0,0]
+			zerosm[0,1]=covmatrix[0,1]
+			zerosm[1,0]=covmatrix[1,0]
+			zerosm[1,1]=covmatrix[1,1]
+			zerosm=zerosm.flatten()
+			zerosm=zerosm.tolist()
+			#print(covmatrix)
+			print(zerosm)
+			#print(covmatrix+zerosp)
+			covpose.covariance=zerosm
+			covposest.pose=covpose
+
+			self.cov_publisher.publish(covposest)
+
 
 	def start_perception(self):
 		while not rospy.is_shutdown():
