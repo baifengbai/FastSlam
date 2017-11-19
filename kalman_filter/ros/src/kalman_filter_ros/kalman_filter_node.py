@@ -131,13 +131,13 @@ class KalmanFilter():
 					(robot_position, robot_orientation)=self.listener.lookupTransform("/odom", "/base_link", rospy.Time())
 
 					(robot_role, robot_pich, robot_yaw)=tf.transformations.euler_from_quaternion(robot_orientation)
-<<<<<<< HEAD
-					robot_pose=(robot_position[0]+np.random.normal(0,0.5), robot_position[1]+np.random.normal(0,0.5), robot_yaw)
 
-=======
+					#robot_pose=(robot_position[0]+np.random.normal(0,0.5), robot_position[1]+np.random.normal(0,0.5), robot_yaw)
+
+
 					robot_pose=(robot_position[0], robot_position[1], robot_yaw)
 					#if there's already an estimate for that aruco's position, a kalman filter update is performed
->>>>>>> 03a1369f245eb3321195a7a8e13ddafbfe0ecc59
+
 					#kalman filter update
 					self.markers_estimation[i.get_id()].ekf_update(i.get_measurement(), robot_pose)
 					print("Measurement: %s"%(i))
