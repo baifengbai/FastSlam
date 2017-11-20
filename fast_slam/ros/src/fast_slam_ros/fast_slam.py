@@ -4,7 +4,7 @@ from fast_slam_ros.particle_filter import ParticleFilter
 import rospy
 from aruco_msgs.msg import MarkerArray
 
-N_ARUCOS=16
+N_ARUCOS=28
 SAMPLING_FREQUENCY=0.5
 
 

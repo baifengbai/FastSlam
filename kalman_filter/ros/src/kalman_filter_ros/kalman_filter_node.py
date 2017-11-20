@@ -7,7 +7,7 @@ from kalman_filter.my_ros_independent_class import ArucoList
 from aruco_msgs.msg import MarkerArray
 from geometry_msgs.msg import *
 
-N_ARUCOS=29
+N_ARUCOS=28
 #Covariance matrix R that represents the covariance of the Gaussian noise of observations
 COVARIANCE_MATRIX=np.matrix([[1.48377597e-01, 2.37789852e-04],[2.37789852e-04, 1.47362967e-01]])
 #COVARIANCE_MATRIX=np.matrix([[1.44433477e-04, 2.37789852e-04],[2.37789852e-04, 3.06948739e-03]])
