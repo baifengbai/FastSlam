@@ -3,7 +3,7 @@
 import numpy as np
 import math
 
-N_ARUCOS=16
+N_ARUCOS=29
 
 class ArucoInfo():
 	def __init__(self, arucoId, arucox, arucoy, arucoAlfa, arucox_world, arucoy_world, arucoAlfa_world):
