@@ -5,7 +5,7 @@ import rospy
 from aruco_msgs.msg import MarkerArray
 
 N_ARUCOS=16
-SAMPLING_FREQUENCY=0.2
+SAMPLING_FREQUENCY=0.5
 
 
 class FastSlam():
@@ -32,7 +32,6 @@ class FastSlam():
 			print(rospy.get_time()-t)
 			t=rospy.get_time()
 			self.particle_filter_executor.particle_filter_iteration(self.aruco_received, self.aruco_msg)
-			
 			r.sleep()
 
 			

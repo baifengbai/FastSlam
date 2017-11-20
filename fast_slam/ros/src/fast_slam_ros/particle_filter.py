@@ -61,11 +61,11 @@ class ParticleFilter():
 				total_w=total_w+particle.w
 			if total_w>0:
 				for particle in self.particle_list:
-					particle.w=particle.w/total_w
+					particle.w=particle.w*pow(total_w,-1)
 		except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
 			pass
 		
-		self.particle_publisher()
+		#self.particle_publisher()
 
 		self.resample()
 
@@ -74,15 +74,16 @@ class ParticleFilter():
 
 	def resample(self):
 		new_list=[None]*N_PARTICLES
-		r=random.random()*(1/N_PARTICLES)
+		r=random.random()*(pow(N_PARTICLES,-1))
 		c=self.particle_list[0].w
 		i=0
 		for m in range(N_PARTICLES):
-			u=r+m/N_PARTICLES
-			while u>c:
+			u=r+m*pow(N_PARTICLES,-1)
+			while u>c and i<m:
 				i=i+1
 				c=c+self.particle_list[i].w
 			new_list[m]=self.particle_list[i].copy_particle()
+			print(i)
 		self.particle_list=new_list
 
 			
@@ -140,7 +141,8 @@ class Particle():
 
 	def copy_particle(self):
 		new_p=Particle(self.x,self.y,self.alfap,self.w)
-		new_p.kf=copy.copy(self.kf)
+		#new_p.kf=copy.copy(self.kf)
+		#new_p.kf=KalmanFilter([self.x,self.y,self.alfap])
 		return new_p
 
 
