@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+import fast_slam_ros.fast_slam
+
+if __name__ == '__main__':
+ fast_slam_ros.fast_slam.main()

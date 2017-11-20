@@ -3,7 +3,7 @@ import numpy as np
 import rospy
 import math
 import tf
-from kalman_filter.my_ros_independent_class import ArucoList
+from my_ros_independent_class import ArucoList
 from aruco_msgs.msg import MarkerArray
 from geometry_msgs.msg import *
 
@@ -58,7 +58,7 @@ class MarkerEstimation():
 		#ignore measured orientation of aruco 
 		measurement=np.delete(measurement, (2), axis=0)
 
-		print("Robot pose:%s"%(robot_pose.T))
+		#print("Robot pose:%s"%(robot_pose.T))
 
 		#H matrix
 		alfaPose=robot_pose[2,0]
@@ -70,7 +70,7 @@ class MarkerEstimation():
 
 		#Observation/Measurement model
 		measureModel=self.measurement_model(robot_pose,marker_position)
-		print("Measure Model:%s"%(measureModel.T))
+		#print("Measure Model:%s"%(measureModel.T))
 
 		#Prediction step
 		predExpectedValue=marker_position
@@ -97,51 +97,47 @@ class MarkerEstimation():
 
 class KalmanFilter():
 
-	def __init__(self):
+	def __init__(self, pose):
 		#msg received from aruco subscriber
 		self.aruco_msg = None
 		#flag of aruco_ros subscriber
 		self.aruco_received = False
-		self.aruco_list=ArucoList()
-		self.markers_estimation=[None]*self.aruco_list.get_size()
+		self.arucos=ArucoList()
+		self.markers_estimation=[None]*N_ARUCOS
 		self.listener=tf.TransformListener()
+		self.particle_pose=pose
 
-		rospy.loginfo('Initializing kalman filter node')
-		#Subscriber of aruco publisher topic with arucos observations
-		rospy.Subscriber('/aruco_marker_publisher/markers', MarkerArray, self.aruco_callback)
+		#rospy.loginfo('Initializing kalman filter node')
 		#Publisher of arucos position estimation
 		self.marker_publisher=rospy.Publisher('marker_estimations', PoseArray, queue_size=10)
 
 		self.cov_publisher=rospy.Publisher('marker_cov', PoseWithCovarianceStamped, queue_size=10)
 
-	def aruco_callback(self,msg):
-		self.aruco_msg=msg
-		self.aruco_received=True
 
 
 	#run a kalman filter for each of the markers being observed
 	def start_kalman_filter(self):
-		for i in self.aruco_list.get_list():
+		for i in self.arucos.get_list():
 			if i!=None: #for all arucos being observed
 				if self.markers_estimation[i.get_id()]==None:
 					#if it's the first sighting of that aruco its position is initialized
 					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),i.get_pose_world()[0], i.get_pose_world()[1])
 				else:
 					#robot pose in the world frame:
-					(robot_position, robot_orientation)=self.listener.lookupTransform("/odom", "/base_link", rospy.Time())
+					#(robot_position, robot_orientation)=self.listener.lookupTransform("/odom", "/base_link", rospy.Time())
 
-					(robot_role, robot_pich, robot_yaw)=tf.transformations.euler_from_quaternion(robot_orientation)
+					#(robot_role, robot_pich, robot_yaw)=tf.transformations.euler_from_quaternion(robot_orientation)
 
 					#robot_pose=(robot_position[0]+np.random.normal(0,0.5), robot_position[1]+np.random.normal(0,0.5), robot_yaw)
 
 
-					robot_pose=(robot_position[0], robot_position[1], robot_yaw)
+					#robot_pose=(robot_position[0], robot_position[1], robot_yaw)
 					#if there's already an estimate for that aruco's position, a kalman filter update is performed
 
 					#kalman filter update
-					self.markers_estimation[i.get_id()].ekf_update(i.get_measurement(), robot_pose)
-					print("Measurement: %s"%(i))
-					print(self.markers_estimation[i.get_id()].get_cov())
+					self.markers_estimation[i.get_id()].ekf_update(i.get_measurement(), self.particle_pose)
+					#print("Measurement: %s"%(i))
+					#print(self.markers_estimation[i.get_id()].get_cov())
 
 		self.markers_publisher()
 
@@ -162,8 +158,8 @@ class KalmanFilter():
 				object_pose_cam=self.listener.transformPose("/camera_rgb_frame", aruco_pose_in)
 		
 				#stores the aruco in the list
-				self.aruco_list.insert_marker(aruco_id,object_pose_cam.pose.position.x,object_pose_cam.pose.position.y,0,object_pose_world.pose.position.x,object_pose_world.pose.position.y,0)
-				rospy.loginfo('Aruco %d  detected!'%(aruco_id))
+				self.arucos.insert_marker(aruco_id,object_pose_cam.pose.position.x,object_pose_cam.pose.position.y,0,object_pose_world.pose.position.x,object_pose_world.pose.position.y,0)
+				#rospy.loginfo('Aruco %d  detected!'%(aruco_id))
 
 	def markers_publisher(self):
 		#creating PoseArray object for publication
@@ -174,7 +170,7 @@ class KalmanFilter():
 		#creating a pose in the poses[] list for every aruco position being estimated
 		for i in self.markers_estimation:
 			if i!=None:
-				print(i)
+				#print(i)
 				mpose=i.get_position()
 				aux_pose=Pose()
 				aux_pose.position.x=mpose[0,0]
@@ -212,7 +208,7 @@ class KalmanFilter():
 			zerosm=zerosm.flatten()
 			zerosm=zerosm.tolist()
 			#print(covmatrix)
-			print(zerosm)
+			#print(zerosm)
 			#print(covmatrix+zerosp)
 			covpose.covariance=zerosm
 			covposest.pose=covpose
@@ -220,13 +216,11 @@ class KalmanFilter():
 			self.cov_publisher.publish(covposest)
 
 
-	def start_perception(self):
-		while not rospy.is_shutdown():
-			if self.aruco_received==True:
-				#set the flag to false
-				self.aruco_received=False
+	def start_perception(self, msg, pose):
 				#reset observations list
-				self.aruco_list.cleanList()
+				self.aruco_msg=msg
+				self.particle_pose=pose
+				self.arucos.cleanList()
 				self.create_detection_list()
 				self.start_kalman_filter()
 
