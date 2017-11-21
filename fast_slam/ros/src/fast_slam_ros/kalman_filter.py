@@ -95,6 +95,8 @@ class MarkerEstimation():
 
 		return h.dot(marker_position-robot_position)
 
+
+
 class KalmanFilter():
 
 	def __init__(self, pose):
@@ -153,12 +155,19 @@ class KalmanFilter():
 				aruco_pose_in.header.frame_id="/camera_rgb_optical_frame"
 				aruco_pose_in.pose=i.pose.pose
 
-				object_pose_world=self.listener.transformPose("/odom",aruco_pose_in)
+
+				alfaPose=self.particle_pose[2]
+				robot_position=np.matrix(self.particle_pose).T
+				robot_position=np.delete(robot_pose, (2), axis=0)
+				marker_position=np.matrix(i.pose.pose.x,i.pose.pose.y).T
+				h=np.matrix([[math.cos(alfaPose), -math.sin(alfaPose)], [math.sin(alfaPose), math.cos(alfaPose)]])
+
+				object_pose_world= h.dot(marker_position)+robot_position
 				#transforms the aruco pose in the optical frame to the "standard" camera frame
-				object_pose_cam=self.listener.transformPose("/camera_rgb_frame", aruco_pose_in)
+				object_pose_cam=self.listener.transformPose("/base_link", aruco_pose_in)
 		
 				#stores the aruco in the list
-				self.arucos.insert_marker(aruco_id,object_pose_cam.pose.position.x,object_pose_cam.pose.position.y,0,object_pose_world.pose.position.x,object_pose_world.pose.position.y,0)
+				self.arucos.insert_marker(aruco_id,object_pose_cam.pose.position.x,object_pose_cam.pose.position.y,0,object_pose_world[0],object_pose_world[1],0)
 				#rospy.loginfo('Aruco %d  detected!'%(aruco_id))
 
 	def markers_publisher(self):

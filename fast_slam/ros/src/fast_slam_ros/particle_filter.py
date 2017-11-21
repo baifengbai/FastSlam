@@ -14,6 +14,7 @@ from fast_slam_ros.kalman_filter import KalmanFilter
 from my_ros_independent_class import ArucoList
 import copy
 
+
 N_ARUCOS=16
 
 #Number of particles - 1000
@@ -30,40 +31,24 @@ class ParticleFilter():
 	def __init__(self):
 		self.listener = tf.TransformListener()
 		self.particles_publisher=rospy.Publisher('particles_publisher', PoseArray, queue_size=10)
-		self.particle_list = [Particle() for i in range(N_PARTICLES)]
-		self.particle_list = [Particle() for i in range(N_PARTICLES)]
-		self.particle_list = [Particle() for i in range(N_PARTICLES)]
-		#t=self.listener.getLatestCommonTime("/base_link", "/odom")
-		try:
-			(robot_position, robot_orientation)=self.listener.lookupTransform("/odom", "/base_link", rospy.Time(0))
-			(roll, pitch, yaw) = tf.transformations.euler_from_quaternion(robot_orientation)
-			self.particle_list = [Particle(robot_position[0], robot_position[1], yaw) for i in range(N_PARTICLES)]
-			self.odom=(robot_position[0], robot_position[1], yaw)
-		except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-			pass
-		
+		self.odom_prev=(0,0,0)
+		self.particle_list = [Particle(self.odom_prev[0],self.odom_prev[1], self.odom_prev[2]) for i in range(N_PARTICLES)]
 
 
-	def particle_filter_iteration(self, aruco_flag, aruco_msg):
-		#t=self.listener.getLatestCommonTime("/base_link", "/odom")
-		try:
-			(robot_position, robot_orientation)=self.listener.lookupTransform("/odom", "/base_link", rospy.Time(0))
-			(roll, pitch, yaw) = tf.transformations.euler_from_quaternion(robot_orientation)
-			motion_model = (robot_position[0]-self.odom[0], robot_position[1]-self.odom[1], yaw-self.odom[2])
-			#print(robot_position)
-			self.odom=(robot_position[0], robot_position[1], yaw)
+	def particle_filter_iteration(self, aruco_flag, aruco_msg, odom_pose):
+		motion_model = (odom_pose[0]-self.odom_prev[0], odom_pose[1]-self.odom_prev[1], odom_pose[2]-self.odom_prev[2])
+		#print(robot_position)
+		self.odom_prev=(odom_pose[0], odom_pose[1], odom_pose[2])
 
-			total_w=0
+		total_w=0
+		for particle in self.particle_list:
+			particle.particle_prediction(motion_model, aruco_flag, aruco_msg)
+			if aruco_flag == True:
+				particle.particle_update()
+			total_w=total_w+particle.w
+		if total_w>0:
 			for particle in self.particle_list:
-				particle.particle_prediction(motion_model, aruco_flag, aruco_msg)
-				if aruco_flag == True:
-					particle.particle_update()
-				total_w=total_w+particle.w
-			if total_w>0:
-				for particle in self.particle_list:
-					particle.w=particle.w*pow(total_w,-1)
-		except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
-			pass
+				particle.w=particle.w*pow(total_w,-1)
 		
 		#self.particle_publisher()
 
@@ -83,7 +68,7 @@ class ParticleFilter():
 				i=i+1
 				c=c+self.particle_list[i].w
 			new_list[m]=self.particle_list[i].copy_particle()
-			print(i)
+			#print(i)
 		self.particle_list=new_list
 
 			
@@ -91,7 +76,7 @@ class ParticleFilter():
 		#creating PoseArray object for publication
 		pose_array=PoseArray()
 		pose_array.header.stamp=rospy.Time.now()
-		pose_array.header.frame_id="/odom"
+		#pose_array.header.frame_id="/odom"
 		
 		#creating a pose in the poses[] list for every aruco position being estimated
 		for i in self.particle_list:
@@ -130,6 +115,7 @@ class Particle():
 			self.kf.start_perception(aruco_msg, [self.x,self.y,self.alfap])
 
 
+	#mal
 	def particle_update(self):
 		for i in range(0,N_ARUCOS):
 			if self.kf.arucos.aruco_list[i]!=None:
