@@ -6,7 +6,7 @@ from aruco_msgs.msg import MarkerArray
 from nav_msgs.msg import *
 import tf
 
-N_ARUCOS=16
+N_ARUCOS=28
 SAMPLING_FREQUENCY=0.5
 
 

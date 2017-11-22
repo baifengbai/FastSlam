@@ -14,8 +14,7 @@ from fast_slam_ros.kalman_filter import KalmanFilter
 from my_ros_independent_class import ArucoList
 import copy
 
-
-N_ARUCOS=16
+N_ARUCOS=28
 
 #Number of particles - 1000
 N_PARTICLES = 50
