@@ -5,9 +5,9 @@
 
  <param name="RosAria/port" value="/dev/pioneer/usb_to_serial_port" />
 
- <node name="RosAria" pkg="rosaria" type="RosAria_node" output="screen"/>
+ <node name="RosAria_node" pkg="rosaria" type="RosAria" output="screen"/>
 
- <node name="usb_can_node" pkg="usb_cam" type="usb_can_node" output="screen"/>
+ <node name="usb_can_node" pkg="usb_cam" type="usb_cam_node" output="screen"/>
 
 
  <node name="fast_slam" pkg="fast_slam" type="fast_slam_node" output="screen"/>
