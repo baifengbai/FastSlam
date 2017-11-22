@@ -49,7 +49,7 @@ class Particle():
 		self.x = x
 		self.y = y
 		self.alfap = alfap
-		self.w = w #weights
+		self.w = w 
 
 
 

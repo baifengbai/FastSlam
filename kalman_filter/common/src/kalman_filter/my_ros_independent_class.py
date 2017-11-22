@@ -28,7 +28,7 @@ class ArucoInfo():
 	def get_pose_world(self):
 		return self.x_world, self.y_world, self.alfa_world
 	def __repr__(self):
-		return "marker id:%d x:%f y:%f alfa:%f"%(self.get_id(),self.get_x(),self.get_y(),self.get_alfa())
+		return "marker id:%d x:%.4f y:%.4f alfa:%.4f"%(self.get_id(),self.get_x(),self.get_y(),self.get_alfa())
 
 	
 
