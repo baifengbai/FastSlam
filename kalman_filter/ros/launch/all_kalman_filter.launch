@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+
+ <!-- small description about your node -->
+
+ <param name="RosAria/port" value="/dev/pioneer/usb_to_serial_port" />
+
+ <node name="RosAria_node" pkg="rosaria" type="RosAria" output="screen"/>
+
+ <node name="usb_can_node" pkg="usb_cam" type="usb_cam_node" output="screen"/>
+
+ <node name="kalman_filter" pkg="kalman_filter" type="kalman_filter_node" output="screen"/>
+
+ <include file="$(find aruco_ros)/launch/mymarker_publisher_real.launch"/>
+
+ <include file="$(find ps3controller)/ros/launch/ps3controller.launch"/>
+
+ <node name="rviz" pkg="rviz" type="rviz" args="-d $(find kalman_filter)/ros/config/config_test.rviz" />
+
+</launch>
