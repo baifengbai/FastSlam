@@ -6,10 +6,11 @@ import tf
 from kalman_filter.my_ros_independent_class import ArucoList
 from aruco_msgs.msg import MarkerArray
 from geometry_msgs.msg import *
+from nav_msgs.msg import *
 
 N_ARUCOS=28
 #Covariance matrix R that represents the covariance of the Gaussian noise of observations
-COVARIANCE_MATRIX=np.matrix([[1.48377597e-01, 2.37789852e-04],[2.37789852e-04, 1.47362967e-01]])
+COVARIANCE_MATRIX=0.1*np.matrix([[1.48377597e-01, 2.37789852e-04],[2.37789852e-04, 1.47362967e-01]])
 #COVARIANCE_MATRIX=np.matrix([[1.44433477e-04, 2.37789852e-04],[2.37789852e-04, 3.06948739e-03]])
 
 class MarkerEstimation():
@@ -110,9 +111,16 @@ class KalmanFilter():
 		#Subscriber of aruco publisher topic with arucos observations
 		rospy.Subscriber('/aruco_marker_publisher/markers', MarkerArray, self.aruco_callback)
 		#Publisher of arucos position estimation
+		rospy.Subscriber('/RosAria/pose', Odometry, self.odom_callback)
 		self.marker_publisher=rospy.Publisher('marker_estimations', PoseArray, queue_size=10)
 
 		self.cov_publisher=rospy.Publisher('marker_cov', PoseWithCovarianceStamped, queue_size=10)
+		self.odom_flag=False
+		self.br=tf.TransformBroadcaster()
+
+	def odom_callback(self,msg):
+		self.odom_msg=msg
+		self.odom_flag=True
 
 	def aruco_callback(self,msg):
 		self.aruco_msg=msg
@@ -156,11 +164,15 @@ class KalmanFilter():
 				#the reference frame is the camera optical frame
 				aruco_pose_in.header.frame_id="/camera_rgb_optical_frame"
 				aruco_pose_in.pose=i.pose.pose
+				print("optical_frame --- x:%d y :%d"%(i.pose.pose.position.x, i.pose.pose.position.y))
 
 				object_pose_world=self.listener.transformPose("/odom",aruco_pose_in)
+				print("odom_frame --- x:%d y :%d"%(object_pose_world.pose.position.x, object_pose_world.pose.position.y))
+
 				#transforms the aruco pose in the optical frame to the "standard" camera frame
-				object_pose_cam=self.listener.transformPose("/camera_rgb_frame", aruco_pose_in)
-		
+				object_pose_cam=self.listener.transformPose("/base_link", aruco_pose_in)
+				print("base_link_frame --- x:%d y :%d"%(object_pose_cam.pose.position.x, object_pose_cam.pose.position.y))
+
 				#stores the aruco in the list
 				self.aruco_list.insert_marker(aruco_id,object_pose_cam.pose.position.x,object_pose_cam.pose.position.y,0,object_pose_world.pose.position.x,object_pose_world.pose.position.y,0)
 				rospy.loginfo('Aruco %d  detected!'%(aruco_id))
@@ -222,6 +234,12 @@ class KalmanFilter():
 
 	def start_perception(self):
 		while not rospy.is_shutdown():
+			if self.odom_flag==True:
+				odom_position=self.odom_msg.pose.pose.position
+				(roll, pitch, yaw)=tf.transformations.euler_from_quaternion((self.odom_msg.pose.pose.orientation.x,self.odom_msg.pose.pose.orientation.y,self.odom_msg.pose.pose.orientation.z,self.odom_msg.pose.pose.orientation.w))
+				self.odom_pose=(odom_position.x, odom_position.y, yaw)
+				self.br.sendTransform((self.odom_pose[0], self.odom_pose[1], 0), tf.transformations.quaternion_from_euler(0,0,self.odom_pose[2]), rospy.Time.now(),"base_link","odom")
+				self.odom_flag=False
 			if self.aruco_received==True:
 				#set the flag to false
 				self.aruco_received=False
@@ -229,6 +247,8 @@ class KalmanFilter():
 				self.aruco_list.cleanList()
 				self.create_detection_list()
 				self.start_kalman_filter()
+
+
 
 
 def main():
