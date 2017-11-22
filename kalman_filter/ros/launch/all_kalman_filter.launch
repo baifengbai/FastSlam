@@ -7,7 +7,7 @@
 
  <node name="RosAria_node" pkg="rosaria" type="RosAria" output="screen"/>
 
- <node name="usb_can_node" pkg="usb_cam" type="usb_cam_node" output="screen"/>
+ <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen"/>
 
  <node name="kalman_filter" pkg="kalman_filter" type="kalman_filter_node" output="screen"/>
 
