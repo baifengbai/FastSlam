@@ -75,7 +75,7 @@ class ParticleFilter():
 		#creating PoseArray object for publication
 		pose_array=PoseArray()
 		pose_array.header.stamp=rospy.Time.now()
-		#pose_array.header.frame_id="/odom"
+		pose_array.header.frame_id="/odom"
 		
 		#creating a pose in the poses[] list for every aruco position being estimated
 		for i in self.particle_list:
