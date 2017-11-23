@@ -26,6 +26,11 @@ class MarkerEstimation():
 	def __str__(self):
 		return "markers_estimation[%d]: x:%.4f y:%.4f"%(self.id,self.x,self.y)
 
+	def copy_marker(self):
+		new_m=MarkerEstimation(self.id, self.x, self.y)
+		new_m.covariance=self.covariance
+		return new_m
+
 	def get_position(self):
 		#print(self.x)
 		#print(self.y)
@@ -110,7 +115,7 @@ class KalmanFilter():
 		self.aruco_received = False
 		self.arucos=ArucoList()
 		self.markers_estimation=[None]*N_ARUCOS
-		self.listener=tf.TransformListener()
+		#self.listener=tf.TransformListener()
 		self.particle_pose=pose
 
 		#rospy.loginfo('Initializing kalman filter node')
@@ -122,9 +127,11 @@ class KalmanFilter():
 
 	def kalman_copy(self):
 		new_k=KalmanFilter(self.particle_pose)
-		new_k.arucos.aruco_list=list(self.arucos.aruco_list)
+		#new_k.arucos.aruco_list=list(self.arucos.aruco_list)
 		new_k.arucos.size=self.arucos.size
-		new_k.markers_estimation=list(self.markers_estimation)
+		for i in range(N_ARUCOS):
+			if self.markers_estimation[i]!=None:
+				new_k.markers_estimation[i]=self.markers_estimation[i].copy_marker()
 		return new_k
 
 
@@ -176,8 +183,8 @@ class KalmanFilter():
 				robot_position=np.delete(robot_position, (2), axis=0)
 
 				#transforms the aruco pose in the optical frame to the "standard" camera frame
-				object_pose_cam=self.listener.transformPose("/base_link", aruco_pose_in)
-
+				#object_pose_cam=self.listener.transformPose("/base_link", aruco_pose_in)
+				object_pose_cam=aruco_pose_in
 
 				marker_position=np.matrix([object_pose_cam.pose.position.x,object_pose_cam.pose.position.y]).T
 				h=np.matrix([[math.cos(alfaPose), -math.sin(alfaPose)], [math.sin(alfaPose), math.cos(alfaPose)]])
