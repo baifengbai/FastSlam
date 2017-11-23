@@ -30,6 +30,7 @@ class ParticleFilter():
 	def __init__(self):
 		self.listener = tf.TransformListener()
 		self.particles_publisher=rospy.Publisher('particles_publisher', PoseArray, queue_size=10)
+		self.ekf_publisher=rospy.Publisher('marker_estimations', PoseArray, queue_size=10)
 		self.odom_prev=(0,0,0)
 		self.particle_list = [Particle(self.odom_prev[0],self.odom_prev[1], self.odom_prev[2]) for i in range(N_PARTICLES)]
 
@@ -76,6 +77,9 @@ class ParticleFilter():
 		pose_array=PoseArray()
 		pose_array.header.stamp=rospy.Time.now()
 		pose_array.header.frame_id="/odom"
+		marker_array=PoseArray()
+		marker_array.header.stamp=rospy.Time.now()
+		marker_array.header.frame_id="/odom"
 		
 		#creating a pose in the poses[] list for every aruco position being estimated
 		for i in self.particle_list:
@@ -90,8 +94,12 @@ class ParticleFilter():
 				aux_pose.orientation.z=az
 				aux_pose.orientation.w=aw
 				pose_array.poses.append(aux_pose)
+				(markers, size)=i.kf.markers_publisher()
+				marker_array.poses=marker_array.poses+markers
 
 		self.particles_publisher.publish(pose_array)
+		if size>0:
+			self.ekf_publisher.publish(marker_array)
 
 
 		

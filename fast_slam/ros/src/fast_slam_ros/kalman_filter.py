@@ -114,7 +114,7 @@ class KalmanFilter():
 
 		#rospy.loginfo('Initializing kalman filter node')
 		#Publisher of arucos position estimation
-		self.marker_publisher=rospy.Publisher('marker_estimations', PoseArray, queue_size=10)
+		#self.marker_publisher=rospy.Publisher('marker_estimations', PoseArray, queue_size=10)
 
 		self.cov_publisher=rospy.Publisher('marker_cov', PoseWithCovarianceStamped, queue_size=10)
 
@@ -144,7 +144,7 @@ class KalmanFilter():
 					#print("Measurement: %s"%(i))
 					#print(self.markers_estimation[i.get_id()].get_cov())
 
-		self.markers_publisher()
+		#self.markers_publisher()
 
 	def create_detection_list(self):
 		#stores every aruco being observed in an ArucoList:
@@ -175,9 +175,11 @@ class KalmanFilter():
 
 	def markers_publisher(self):
 		#creating PoseArray object for publication
-		pose_array=PoseArray()
-		pose_array.header.stamp=rospy.Time.now()
-		pose_array.header.frame_id="/odom"
+		#pose_array=PoseArray()
+		pose_array=[Pose()]*0
+		size=0
+		#pose_array.header.stamp=rospy.Time.now()
+		#pose_array.header.frame_id="/odom"
 		
 		#creating a pose in the poses[] list for every aruco position being estimated
 		for i in self.markers_estimation:
@@ -192,9 +194,12 @@ class KalmanFilter():
 				aux_pose.orientation.y=-0.707
 				aux_pose.orientation.z=0
 				aux_pose.orientation.w=0.707
-				pose_array.poses.append(aux_pose)
+				#pose_array.poses.append(aux_pose)
+				pose_array.append(aux_pose)
+				size=size+1
 
-		self.marker_publisher.publish(pose_array)
+		#self.marker_publisher.publish(pose_array)
+		return pose_array, size
 
 		'''if self.markers_estimation[0]!=None:
 			covposest=PoseWithCovarianceStamped()
