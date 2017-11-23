@@ -115,6 +115,9 @@ class Particle():
 		self.kf = KalmanFilter([self.x,self.y,self.alfap])
 
 	def particle_prediction(self, motion_model, aruco_flag, aruco_msg):
+		#self.x = self.x+motion_model[0]
+		#self.y = self.y+motion_model[1]
+		#self.alfap = self.alfap+motion_model[2]
 		self.x = self.x+motion_model[0]+np.random.normal(0,0.01)
 		self.y = self.y+motion_model[1]+np.random.normal(0,0.01)
 		self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.01)

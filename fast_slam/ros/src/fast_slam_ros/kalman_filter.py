@@ -127,6 +127,8 @@ class KalmanFilter():
 				if self.markers_estimation[i.get_id()]==None:
 					#if it's the first sighting of that aruco its position is initialized
 					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),i.get_pose_world()[0], i.get_pose_world()[1])
+					#print("First_time(world_frame): [%f,%f]"%(i.get_pose_world()[0],i.get_pose_world()[1]))
+					#print("First_time(camera_frame): [%f,%f]"%(i.x,i.y))
 				else:
 					#robot pose in the world frame:
 					#(robot_position, robot_orientation)=self.listener.lookupTransform("/odom", "/base_link", rospy.Time())
@@ -141,7 +143,9 @@ class KalmanFilter():
 
 					#kalman filter update
 					self.markers_estimation[i.get_id()].ekf_update(i.get_measurement(), self.particle_pose)
-					#print("Measurement: %s"%(i))
+					#print("Measurement(world_frame): [%f,%f]"%(i.x_world,i.y_world))
+					#print("Measurement(camera_frame): [%f,%f]"%(i.x,i.y))
+					#print("------------------------")
 					#print(self.markers_estimation[i.get_id()].get_cov())
 
 		#self.markers_publisher()
@@ -162,13 +166,20 @@ class KalmanFilter():
 				alfaPose=self.particle_pose[2]
 				robot_position=np.matrix(self.particle_pose).T
 				robot_position=np.delete(robot_position, (2), axis=0)
-				marker_position=np.matrix([i.pose.pose.position.x,i.pose.pose.position.y]).T
-				h=np.matrix([[math.cos(alfaPose), -math.sin(alfaPose)], [math.sin(alfaPose), math.cos(alfaPose)]])
 
-				object_pose_world= h.dot(marker_position)+robot_position
 				#transforms the aruco pose in the optical frame to the "standard" camera frame
 				object_pose_cam=self.listener.transformPose("/base_link", aruco_pose_in)
-		
+
+
+				marker_position=np.matrix([object_pose_cam.pose.position.x,object_pose_cam.pose.position.y]).T
+				h=np.matrix([[math.cos(alfaPose), -math.sin(alfaPose)], [math.sin(alfaPose), math.cos(alfaPose)]])
+
+				#print("robot_pose:[%f,%f,%f]"%(self.particle_pose[0],self.particle_pose[1],self.particle_pose[2]))
+
+				#print("marker_pose:[%f,%f]"%(object_pose_cam.pose.position.x,object_pose_cam.pose.position.y))
+
+				object_pose_world= h.dot(marker_position)+robot_position
+
 				#stores the aruco in the list
 				self.arucos.insert_marker(aruco_id,object_pose_cam.pose.position.x,object_pose_cam.pose.position.y,0,object_pose_world[0,0],object_pose_world[1,0],0)
 				#rospy.loginfo('Aruco %d  detected!'%(aruco_id))
