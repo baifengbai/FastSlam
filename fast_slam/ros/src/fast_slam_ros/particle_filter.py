@@ -120,10 +120,11 @@ class ParticleFilter():
 				pose_array.poses.append(aux_pose)
 				(markers, size)=i.kf.markers_publisher()
 				marker_array.poses=marker_array.poses+markers
-
+				#print("particle pose x:%f y:%f"%(aux_pose.position.x,aux_pose.position.y))
 		self.particles_publisher.publish(pose_array)
 		if size>0:
 			self.ekf_publisher.publish(marker_array)
+
 
 
 		
