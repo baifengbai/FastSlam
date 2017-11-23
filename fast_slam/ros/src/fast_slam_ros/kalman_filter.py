@@ -6,6 +6,7 @@ import tf
 from my_ros_independent_class import ArucoList
 from aruco_msgs.msg import MarkerArray
 from geometry_msgs.msg import *
+import copy
 
 N_ARUCOS=28
 #Covariance matrix R that represents the covariance of the Gaussian noise of observations
@@ -118,6 +119,13 @@ class KalmanFilter():
 
 		self.cov_publisher=rospy.Publisher('marker_cov', PoseWithCovarianceStamped, queue_size=10)
 
+
+	def kalman_copy(self):
+		new_k=KalmanFilter(self.particle_pose)
+		new_k.arucos.aruco_list=list(self.arucos.aruco_list)
+		new_k.arucos.size=self.arucos.size
+		new_k.markers_estimation=list(self.markers_estimation)
+		return new_k
 
 
 	#run a kalman filter for each of the markers being observed
