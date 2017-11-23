@@ -26,6 +26,8 @@ class MarkerEstimation():
 		return "markers_estimation[%d]: x:%.4f y:%.4f"%(self.id,self.x,self.y)
 
 	def get_position(self):
+		#print(self.x)
+		#print(self.y)
 		return np.matrix([self.x, self.y]).T
 
 	def get_cov(self):
@@ -35,6 +37,7 @@ class MarkerEstimation():
 		return self.id
 
 	def update_position(self, new_state):
+		#print(new_state)
 		self.x=new_state[0,0]
 		self.y=new_state[1,0]
 
@@ -158,8 +161,8 @@ class KalmanFilter():
 
 				alfaPose=self.particle_pose[2]
 				robot_position=np.matrix(self.particle_pose).T
-				robot_position=np.delete(robot_pose, (2), axis=0)
-				marker_position=np.matrix(i.pose.pose.x,i.pose.pose.y).T
+				robot_position=np.delete(robot_position, (2), axis=0)
+				marker_position=np.matrix([i.pose.pose.position.x,i.pose.pose.position.y]).T
 				h=np.matrix([[math.cos(alfaPose), -math.sin(alfaPose)], [math.sin(alfaPose), math.cos(alfaPose)]])
 
 				object_pose_world= h.dot(marker_position)+robot_position
@@ -167,7 +170,7 @@ class KalmanFilter():
 				object_pose_cam=self.listener.transformPose("/base_link", aruco_pose_in)
 		
 				#stores the aruco in the list
-				self.arucos.insert_marker(aruco_id,object_pose_cam.pose.position.x,object_pose_cam.pose.position.y,0,object_pose_world[0],object_pose_world[1],0)
+				self.arucos.insert_marker(aruco_id,object_pose_cam.pose.position.x,object_pose_cam.pose.position.y,0,object_pose_world[0,0],object_pose_world[1,0],0)
 				#rospy.loginfo('Aruco %d  detected!'%(aruco_id))
 
 	def markers_publisher(self):
@@ -193,7 +196,7 @@ class KalmanFilter():
 
 		self.marker_publisher.publish(pose_array)
 
-		if self.markers_estimation[0]!=None:
+		'''if self.markers_estimation[0]!=None:
 			covposest=PoseWithCovarianceStamped()
 			covposest.header.stamp=rospy.Time.now()
 			covposest.header.frame_id="/odom"
@@ -222,12 +225,13 @@ class KalmanFilter():
 			covpose.covariance=zerosm
 			covposest.pose=covpose
 
-			self.cov_publisher.publish(covposest)
+			self.cov_publisher.publish(covposest)'''
 
 
 	def start_perception(self, msg, pose):
 				#reset observations list
 				self.aruco_msg=msg
+
 				self.particle_pose=pose
 				self.arucos.cleanList()
 				self.create_detection_list()
