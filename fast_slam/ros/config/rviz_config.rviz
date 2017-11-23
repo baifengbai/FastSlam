@@ -11,7 +11,6 @@ Panels:
         - /PoseArray1
         - /PoseArray2
         - /Image1
-        - /Image1/Status1
       Splitter Ratio: 0.5
     Tree Height: 277
   - Class: rviz/Selection
@@ -32,7 +31,7 @@ Panels:
     Experimental: false
     Name: Time
     SyncMode: 0
-    SyncSource: ""
+    SyncSource: Image
 Visualization Manager:
   Class: ""
   Displays:
@@ -80,7 +79,7 @@ Visualization Manager:
       Name: PoseArray
       Shaft Length: 0.5
       Shaft Radius: 0.100000001
-      Shape: Arrow (3D)
+      Shape: Arrow (Flat)
       Topic: /marker_estimations
       Unreliable: false
       Value: true
