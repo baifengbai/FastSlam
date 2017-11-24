@@ -31,12 +31,13 @@ numbp[:,2] = np.random.uniform(0,2*math.pi,N_PARTICLES)'''
 #Motion Model
 class ParticleFilter():
 
-	def __init__(self):
+	def __init__(self, cam_transformation):
 		self.listener = tf.TransformListener()
 		self.particles_publisher=rospy.Publisher('particles_publisher', PoseArray, queue_size=10)
 		self.ekf_publisher=rospy.Publisher('marker_estimations', PoseArray, queue_size=10)
 		self.odom_prev=(0,0,0)
-		self.particle_list = [Particle(self.odom_prev[0],self.odom_prev[1], self.odom_prev[2]) for i in range(N_PARTICLES)]
+		self.cam_transformation=cam_transformation
+		self.particle_list = [Particle(self.cam_transformation,self.odom_prev[0],self.odom_prev[1], self.odom_prev[2]) for i in range(N_PARTICLES)]
 
 
 	def particle_filter_iteration(self, aruco_flag, aruco_msg, odom_pose):
@@ -131,20 +132,21 @@ class ParticleFilter():
 
 class Particle():
 
-	def __init__(self,x=np.random.uniform(-6.5,6.5,1),y=np.random.uniform(-6.5,6.5,1),alfap=np.random.uniform(0,2*math.pi,1),w=math.pow(N_PARTICLES,-1)):
+	def __init__(self,cam_transformation,x=np.random.uniform(-6.5,6.5,1),y=np.random.uniform(-6.5,6.5,1),alfap=np.random.uniform(0,2*math.pi,1),w=math.pow(N_PARTICLES,-1)):
 		self.x = x
 		self.y = y
 		self.alfap = alfap
 		self.w = w #weights
-		self.kf = KalmanFilter([self.x,self.y,self.alfap])
+		self.cam_transformation=cam_transformation
+		self.kf = KalmanFilter([self.x,self.y,self.alfap],cam_transformation)
 
 	def particle_prediction(self, motion_model, aruco_flag, aruco_msg):
 		#self.x = self.x+motion_model[0]
 		#self.y = self.y+motion_model[1]
 		self.alfap = self.alfap+motion_model[2]
-		self.x = self.x+motion_model[0]+np.random.normal(0,0.1)
-		self.y = self.y+motion_model[1]+np.random.normal(0,0.1)
-		#self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.1)
+		self.x = self.x+motion_model[0]+np.random.normal(0,0.01)
+		self.y = self.y+motion_model[1]+np.random.normal(0,0.01)
+		self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.001)
 
 		if aruco_flag == True:
 			self.kf.start_perception(aruco_msg, [self.x,self.y,self.alfap])
@@ -161,7 +163,7 @@ class Particle():
 
 
 	def copy_particle(self):
-		new_p=Particle(self.x,self.y,self.alfap,self.w)
+		new_p=Particle(self.cam_transformation,self.x,self.y,self.alfap,self.w)
 		new_p.kf=self.kf.kalman_copy()
 		#new_p.kf=KalmanFilter([self.x,self.y,self.alfap])
 		return new_p

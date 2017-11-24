@@ -7,6 +7,7 @@ from my_ros_independent_class import ArucoList
 from aruco_msgs.msg import MarkerArray
 from geometry_msgs.msg import *
 import copy
+import tf2_geometry_msgs
 
 N_ARUCOS=28
 #Covariance matrix R that represents the covariance of the Gaussian noise of observations
@@ -108,7 +109,7 @@ class MarkerEstimation():
 
 class KalmanFilter():
 
-	def __init__(self, pose):
+	def __init__(self, pose,cam_transformation):
 		#msg received from aruco subscriber
 		self.aruco_msg = None
 		#flag of aruco_ros subscriber
@@ -117,16 +118,16 @@ class KalmanFilter():
 		self.markers_estimation=[None]*N_ARUCOS
 		#self.listener=tf.TransformListener()
 		self.particle_pose=pose
-
+		self.cam_transformation=cam_transformation
 		#rospy.loginfo('Initializing kalman filter node')
 		#Publisher of arucos position estimation
 		#self.marker_publisher=rospy.Publisher('marker_estimations', PoseArray, queue_size=10)
 
-		self.cov_publisher=rospy.Publisher('marker_cov', PoseWithCovarianceStamped, queue_size=10)
+		#self.cov_publisher=rospy.Publisher('marker_cov', PoseWithCovarianceStamped, queue_size=10)
 
 
 	def kalman_copy(self):
-		new_k=KalmanFilter(self.particle_pose)
+		new_k=KalmanFilter(self.particle_pose, self.cam_transformation)
 		#new_k.arucos.aruco_list=list(self.arucos.aruco_list)
 		new_k.arucos.size=self.arucos.size
 		for i in range(N_ARUCOS):
@@ -184,7 +185,8 @@ class KalmanFilter():
 
 				#transforms the aruco pose in the optical frame to the "standard" camera frame
 				#object_pose_cam=self.listener.transformPose("/base_link", aruco_pose_in)
-				object_pose_cam=aruco_pose_in
+				object_pose_cam=tf2_geometry_msgs.do_transform_pose(aruco_pose_in, self.cam_transformation)
+				#object_pose_cam=aruco_pose_in
 
 				marker_position=np.matrix([object_pose_cam.pose.position.x,object_pose_cam.pose.position.y]).T
 				h=np.matrix([[math.cos(alfaPose), -math.sin(alfaPose)], [math.sin(alfaPose), math.cos(alfaPose)]])

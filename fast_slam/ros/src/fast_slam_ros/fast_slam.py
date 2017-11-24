@@ -5,15 +5,32 @@ import rospy
 from aruco_msgs.msg import MarkerArray
 from nav_msgs.msg import *
 import tf
+from geometry_msgs.msg import *
 
 N_ARUCOS=28
-SAMPLING_FREQUENCY=100
+SAMPLING_FREQUENCY=1
 
 
 class FastSlam():
 
 	def __init__(self):
-		self.particle_filter_executor = ParticleFilter()
+		self.listener=tf.TransformListener()
+		self.listener.waitForTransform("/base_link", "/camera_rgb_optical_frame", rospy.Time(0), rospy.Duration(4.0))
+		(cam_translation, cam_rotation)=self.listener.lookupTransform("/base_link", "/camera_rgb_optical_frame", rospy.Time(0))
+		cam_transformation=TransformStamped()
+		cam_transformation.header.stamp=rospy.Time.now()
+		cam_transformation.header.frame_id="/camera_rgb_optical_frame"
+		cam_transformation.child_frame_id="/base_link"
+		cam_transformation.transform.translation.x=cam_translation[0]
+		cam_transformation.transform.translation.y=cam_translation[1]
+		cam_transformation.transform.translation.z=cam_translation[2]
+		cam_transformation.transform.rotation.x=cam_rotation[0]
+		cam_transformation.transform.rotation.y=cam_rotation[1]
+		cam_transformation.transform.rotation.z=cam_rotation[2]
+		cam_transformation.transform.rotation.w=cam_rotation[3]
+		#cam_matrix=self.listener.fromTranslationRotation(cam_translation, cam_rotation)
+		#print(cam_matrix)
+		self.particle_filter_executor = ParticleFilter(cam_transformation)
 		#msg received from aruco subscriber
 		self.aruco_msg = None
 		#flag of aruco_ros subscriber
