@@ -15,13 +15,13 @@ from my_ros_independent_class import ArucoList
 import copy
 
 import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
+#from mpl_toolkits.mplot3d import Axes3D
 
 
 N_ARUCOS=28
 
 #Number of particles - 1000
-N_PARTICLES = 500
+N_PARTICLES = 100
 '''numbp = np.zeros((N_PARTICLES,3))
 numbp[:,0] = np.random.uniform(-6.5,6.5,N_PARTICLES) #6.5 dimensions of room
 numbp[:,1] = np.random.uniform(-6.5,6.5,N_PARTICLES)
@@ -38,7 +38,9 @@ class ParticleFilter():
 		self.odom_prev=(0,0,0)
 		self.cam_transformation=cam_transformation
 		self.particle_list = [Particle(self.cam_transformation,self.odom_prev[0],self.odom_prev[1], self.odom_prev[2]) for i in range(N_PARTICLES)]
-
+		plt.figure()
+		plt.ion()
+		#plt.show()
 
 	def particle_filter_iteration(self, aruco_flag, aruco_msg, odom_pose):
 		motion_model = (odom_pose[0]-self.odom_prev[0], odom_pose[1]-self.odom_prev[1], odom_pose[2]-self.odom_prev[2])
@@ -75,11 +77,16 @@ class ParticleFilter():
 
 		self.particle_publisher()
 
-		#plt.figure()
-		#plt.plot(erro,weights,'o')
-		#plt.xlabel('erro')
-		#plt.ylabel('weight')
-		#plt.show()
+		
+		plt.clf()
+		plt.plot(erro,weights,'o')
+		plt.draw()
+		plt.xlabel('erro')
+		plt.ylabel('weight')
+		plt.pause(0.001)
+		
+		
+		
 
 
 	def resample(self):
@@ -147,7 +154,7 @@ class Particle():
 		self.alfap = self.alfap+motion_model[2]
 		self.x = self.x+motion_model[0]+np.random.normal(0,0.01)
 		self.y = self.y+motion_model[1]+np.random.normal(0,0.01)
-		self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.001)
+		#self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.001)
 
 		if aruco_flag == True:
 			self.kf.start_perception(aruco_msg, [self.x,self.y,self.alfap])
