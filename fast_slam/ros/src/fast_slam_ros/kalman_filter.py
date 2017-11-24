@@ -227,6 +227,8 @@ class KalmanFilter():
 				size=size+1
 
 		#self.marker_publisher.publish(pose_array)
+				#print("marker pose x:%f y:%f"%(aux_pose.position.x,aux_pose.position.y))
+
 		return pose_array, size
 
 		'''if self.markers_estimation[0]!=None:

@@ -143,7 +143,7 @@ class KalmanFilter():
 					#robot_pose=(robot_position[0]+np.random.normal(0,0.5), robot_position[1]+np.random.normal(0,0.5), robot_yaw)
 
 
-					robot_pose=(robot_position[0], robot_position[1], robot_yaw)
+					robot_pose=(robot_position[0] + np.random.normal(0, 0.1), robot_position[1] + np.random.normal(0, 0.1), robot_yaw)
 					#if there's already an estimate for that aruco's position, a kalman filter update is performed
 
 					#kalman filter update
