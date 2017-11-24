@@ -3,6 +3,8 @@
 
  <!-- small description about your node -->
 <!-- rosbag record -a -x "/usb_cam/(.*)|/RosAria/sonar(.*)|/RosAria/battery(.*)|/RosAria/motors_state|/aruco_marker_publisher/debug/(.*)" -->
+<!-- rosbag record -a -x "/ir/(.*)|/rgb/(.*)|/depth/(.*)|/depth_registered/(.*)|/RosAria/sonar(.*)|/RosAria/battery(.*)|/RosAria/motors_state|/aruco_marker_publisher/debug/(.*)" -->
+
 
  <param name ="/use_sim_time" value="true"/>
 
