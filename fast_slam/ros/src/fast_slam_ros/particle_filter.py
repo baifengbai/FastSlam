@@ -72,7 +72,7 @@ class ParticleFilter():
 				i=i+1
 		
 		#self.particle_publisher()
-
+		
 		self.resample()
 
 		self.particle_publisher()
