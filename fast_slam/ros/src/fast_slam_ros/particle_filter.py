@@ -171,7 +171,7 @@ class Particle():
 
 
 	def copy_particle(self):
-		new_p=Particle(self.cam_transformation,self.x,self.y,self.alfap,self.w)
+		new_p=Particle(self.cam_transformation,self.x,self.y,self.alfap)
 		new_p.kf=self.kf.kalman_copy()
 		#new_p.kf=KalmanFilter([self.x,self.y,self.alfap])
 		return new_p
