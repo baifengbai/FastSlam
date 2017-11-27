@@ -65,6 +65,7 @@ class ParticleFilter():
 			i=i+1
 		#particles weights normalization
 		n_eff=0 
+		soma_pesos=0
 		if total_w>0:
 			i=0
 			for particle in self.particle_list:
@@ -72,10 +73,10 @@ class ParticleFilter():
 				weights[i]=particle.w
 				n_eff=n_eff+pow(particle.w,2)
 				i=i+1
-		
+		#print(weights)
 		#self.particle_publisher()
 		n_eff=pow(n_eff,-1)
-
+		
 		if n_eff<N_PARTICLES*0.5:
 			self.resample()
 
@@ -156,10 +157,10 @@ class Particle():
 		#self.x = self.x+motion_model[0]
 		#self.y = self.y+motion_model[1]
 		#self.alfap = self.alfap+motion_model[2]
-		if not (abs(motion_model[0])<0.01 and abs(motion_model[1])<0.01 and abs(motion_model[2])<0.001):
+		if not (abs(motion_model[0])<0.001 and abs(motion_model[1])<0.001 and abs(motion_model[2])<0.0005):
 			self.x = self.x+motion_model[0]+np.random.normal(0,0.1)
 			self.y = self.y+motion_model[1]+np.random.normal(0,0.1)
-			self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.05)
+			self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.02)
 
 		if aruco_flag == True:
 			self.kf.start_perception(aruco_msg, [self.x,self.y,self.alfap])
@@ -167,12 +168,18 @@ class Particle():
 
 	#mal
 	def particle_update(self):
-		for i in range(0,N_ARUCOS):
+		#print("---new particle---")
+		for i in range(N_ARUCOS):
 			if self.kf.arucos.aruco_list[i]!=None:
 				measurement=self.kf.arucos.aruco_list[i]
 				estimator=self.kf.markers_estimation[i]
+				#print("measurement: %s"%(measurement))
+				#print("estimator: %s"%(estimator))
 				likelihood=mvn.pdf((measurement.x_world,measurement.y_world), (estimator.x,estimator.y), estimator.covariance)
-				self.w=self.w*likelihood
+				#threshold for wrong observations
+				if likelihood > 0.000000001:
+					self.w=self.w*likelihood
+				#print("%d: %f"%(i,likelihood))
 
 
 	def copy_particle(self):
