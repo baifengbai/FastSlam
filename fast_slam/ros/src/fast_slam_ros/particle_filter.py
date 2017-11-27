@@ -63,17 +63,21 @@ class ParticleFilter():
 			erro[i]=pow(pow(particle.x,2)+pow(particle.y,2),0.5)
 			total_w=total_w+particle.w
 			i=i+1
-		#particles weights normalization 
+		#particles weights normalization
+		n_eff=0 
 		if total_w>0:
 			i=0
 			for particle in self.particle_list:
 				particle.w=particle.w*pow(total_w,-1)
 				weights[i]=particle.w
+				n_eff=n_eff+pow(particle.w,2)
 				i=i+1
 		
 		#self.particle_publisher()
+		n_eff=pow(n_eff,-1)
 
-		self.resample()
+		if n_eff<N_PARTICLES*0.5:
+			self.resample()
 
 		self.particle_publisher()
 
@@ -152,9 +156,10 @@ class Particle():
 		#self.x = self.x+motion_model[0]
 		#self.y = self.y+motion_model[1]
 		#self.alfap = self.alfap+motion_model[2]
-		self.x = self.x+motion_model[0]+np.random.normal(0,0.1)
-		self.y = self.y+motion_model[1]+np.random.normal(0,0.1)
-		self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.01)
+		if not (abs(motion_model[0])<0.01 and abs(motion_model[1])<0.01 and abs(motion_model[2])<0.001):
+			self.x = self.x+motion_model[0]+np.random.normal(0,0.1)
+			self.y = self.y+motion_model[1]+np.random.normal(0,0.1)
+			self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.05)
 
 		if aruco_flag == True:
 			self.kf.start_perception(aruco_msg, [self.x,self.y,self.alfap])
@@ -167,7 +172,7 @@ class Particle():
 				measurement=self.kf.arucos.aruco_list[i]
 				estimator=self.kf.markers_estimation[i]
 				likelihood=mvn.pdf((measurement.x_world,measurement.y_world), (estimator.x,estimator.y), estimator.covariance)
-				self.w=likelihood
+				self.w=self.w*likelihood
 
 
 	def copy_particle(self):
