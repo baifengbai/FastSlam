@@ -12,6 +12,7 @@ from aruco_msgs.msg import MarkerArray
 from geometry_msgs.msg import *
 from fast_slam_ros.kalman_filter import KalmanFilter
 from my_ros_independent_class import ArucoList
+from nav_msgs.msg import *
 import copy
 
 import matplotlib.pyplot as plt
@@ -35,6 +36,7 @@ class ParticleFilter():
 		self.listener = tf.TransformListener()
 		self.particles_publisher=rospy.Publisher('particles_publisher', PoseArray, queue_size=10)
 		self.ekf_publisher=rospy.Publisher('marker_estimations', PoseArray, queue_size=10)
+		self.path_publisher=rospy.Publisher('path_estimation', Path, queue_size=10)
 		self.odom_prev=(0,0,0)
 		self.cam_transformation=cam_transformation
 		self.particle_list = [Particle(self.cam_transformation,self.odom_prev[0],self.odom_prev[1], self.odom_prev[2]) for i in range(N_PARTICLES)]
@@ -117,6 +119,25 @@ class ParticleFilter():
 		marker_array=PoseArray()
 		marker_array.header.stamp=rospy.Time.now()
 		marker_array.header.frame_id="/odom"
+		pose_estimate=PoseStamped()
+		pose_estimate.header.stamp=rospy.Time.now()
+		pose_estimate.header.frame_id="/odom"
+		trajectory=Path()
+		trajectory.header.stamp=rospy.Time.now()
+		trajectory.header.frame_id="/odom"
+
+		new_particle_list = sorted(self.particle_list, key=lambda x: x.w, reverse=True)
+		new_particle_list=new_particle_list[2]
+		pose_estimate.pose.position.x=new_particle_list.x
+		pose_estimate.pose.position.y=new_particle_list.y
+		pose_estimate.pose.position.z=0.275
+		(px,py,pz,pw) = tf.transformations.quaternion_from_euler(0,0,new_particle_list.alfap)
+		pose_estimate.pose.orientation.x=px
+		pose_estimate.pose.orientation.y=py
+		pose_estimate.pose.orientation.z=pz
+		pose_estimate.pose.orientation.w=pw
+		trajectory.poses.append(pose_estimate)	
+		self.path_publisher.publish(trajectory)	
 		
 		#creating a pose in the poses[] list for every aruco position being estimated
 		for i in self.particle_list:
