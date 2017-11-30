@@ -64,6 +64,7 @@ class FastSlam():
 				self.br.sendTransform((self.odom_pose[0], self.odom_pose[1], 0), tf.transformations.quaternion_from_euler(0,0,self.odom_pose[2]), rospy.Time.now(),"base_link","odom")
 				self.odom_flag=False
 			self.particle_filter_executor.particle_filter_iteration(self.aruco_received, self.aruco_msg, self.odom_pose)
+			self.aruco_received=False
 			n_iter=n_iter+1
 			r.sleep()
 
