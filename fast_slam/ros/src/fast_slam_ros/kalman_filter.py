@@ -17,19 +17,18 @@ COVARIANCE_MATRIX=np.matrix([[1.48377597e-01, 2.37789852e-04],[2.37789852e-04, 1
 class MarkerEstimation():
 
 	#alpha is not being used (we donot consider the orientation of the marker)
-	def __init__(self,aid,x,y,alpha=0):
+	def __init__(self,aid,x,y,cov,alpha=0):
 		self.id=aid
 		self.x=x
 		self.y=y
 		self.orientation=alpha
-		self.covariance=COVARIANCE_MATRIX
+		self.covariance=cov
 
 	def __str__(self):
 		return "markers_estimation[%d]: x:%.4f y:%.4f"%(self.id,self.x,self.y)
 
 	def copy_marker(self):
-		new_m=MarkerEstimation(self.id, self.x, self.y)
-		new_m.covariance=self.covariance
+		new_m=MarkerEstimation(self.id, self.x, self.y, self.covariance)
 		return new_m
 
 	def get_position(self):
@@ -142,7 +141,10 @@ class KalmanFilter():
 			if i!=None: #for all arucos being observed
 				if self.markers_estimation[i.get_id()]==None:
 					#if it's the first sighting of that aruco its position is initialized
-					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),i.get_pose_world()[0], i.get_pose_world()[1])
+					h=np.matrix([[math.cos(self.particle_pose[2]), math.sin(self.particle_pose[2])], [-math.sin(self.particle_pose[2]), math.cos(self.particle_pose[2])]])
+					h_inv=np.linalg.inv(h)
+					cov_robot_frame=h_inv.dot(COVARIANCE_MATRIX).dot(h_inv.transpose())
+					self.markers_estimation[i.get_id()]=MarkerEstimation(i.get_id(),i.get_pose_world()[0], i.get_pose_world()[1], cov_robot_frame)
 					#print("First_time(world_frame): [%f,%f]"%(i.get_pose_world()[0],i.get_pose_world()[1]))
 					#print("First_time(camera_frame): [%f,%f]"%(i.x,i.y))
 				else:
