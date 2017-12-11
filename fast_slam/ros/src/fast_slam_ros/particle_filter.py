@@ -38,6 +38,7 @@ class ParticleFilter():
 		self.particles_publisher=rospy.Publisher('particles_publisher', PoseArray, queue_size=10)
 		self.ekf_publisher=rospy.Publisher('marker_estimations', PoseArray, queue_size=10)
 		self.path_publisher=rospy.Publisher('path_estimation', Path, queue_size=10)
+		self.single_marker_publisher=rospy.Publisher('single_marker', PoseArray, queue_size=10)
 		self.odom_prev=(0,0,0)
 		self.cam_transformation=cam_transformation
 		self.particle_list = [Particle(self.cam_transformation,self.odom_prev[0],self.odom_prev[1], self.odom_prev[2]) for i in range(N_PARTICLES)]
@@ -126,6 +127,9 @@ class ParticleFilter():
 		trajectory=Path()
 		trajectory.header.stamp=rospy.Time.now()
 		trajectory.header.frame_id="/odom"
+		single_marker=PoseArray()
+		single_marker.header.stamp=rospy.Time.now()
+		single_marker.header.frame_id="/odom"
 
 		new_particle_list = sorted(self.particle_list, key=lambda x: x.w, reverse=True)
 		new_particle_list=new_particle_list[2]
@@ -138,7 +142,10 @@ class ParticleFilter():
 		pose_estimate.pose.orientation.z=pz
 		pose_estimate.pose.orientation.w=pw
 		trajectory.poses.append(pose_estimate)	
-		self.path_publisher.publish(trajectory)	
+		self.path_publisher.publish(trajectory)
+		(markers_aux,size)=	new_particle_list.kf.markers_publisher()
+		single_marker.poses=markers_aux
+		self.single_marker_publisher.publish(single_marker)
 		
 		#creating a pose in the poses[] list for every aruco position being estimated
 		for i in self.particle_list:
