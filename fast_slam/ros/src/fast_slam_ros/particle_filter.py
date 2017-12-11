@@ -22,6 +22,8 @@ import matplotlib.pyplot as plt
 N_ARUCOS=100
 
 #Number of particles - 1000
+COVARIANCE_MATRIX=np.matrix([[1.48377597e-01, 2.37789852e-04],[2.37789852e-04, 1.47362967e-01]])*2
+
 N_PARTICLES = 200
 '''numbp = np.zeros((N_PARTICLES,3))
 numbp[:,0] = np.random.uniform(-6.5,6.5,N_PARTICLES) #6.5 dimensions of room
@@ -37,6 +39,7 @@ class ParticleFilter():
 		self.particles_publisher=rospy.Publisher('particles_publisher', PoseArray, queue_size=10)
 		self.ekf_publisher=rospy.Publisher('marker_estimations', PoseArray, queue_size=10)
 		self.path_publisher=rospy.Publisher('path_estimation', Path, queue_size=10)
+		self.single_marker_publisher=rospy.Publisher('single_marker', PoseArray, queue_size=10)
 		self.odom_prev=(0,0,0)
 		self.cam_transformation=cam_transformation
 		self.particle_list = [Particle(self.cam_transformation,self.odom_prev[0],self.odom_prev[1], self.odom_prev[2]) for i in range(N_PARTICLES)]
@@ -125,6 +128,9 @@ class ParticleFilter():
 		trajectory=Path()
 		trajectory.header.stamp=rospy.Time.now()
 		trajectory.header.frame_id="/odom"
+		single_marker=PoseArray()
+		single_marker.header.stamp=rospy.Time.now()
+		single_marker.header.frame_id="/odom"
 
 		new_particle_list = sorted(self.particle_list, key=lambda x: x.w, reverse=True)
 		new_particle_list=new_particle_list[2]
@@ -137,7 +143,10 @@ class ParticleFilter():
 		pose_estimate.pose.orientation.z=pz
 		pose_estimate.pose.orientation.w=pw
 		trajectory.poses.append(pose_estimate)	
-		self.path_publisher.publish(trajectory)	
+		self.path_publisher.publish(trajectory)
+		(markers_aux,size)=	new_particle_list.kf.markers_publisher()
+		single_marker.poses=markers_aux
+		self.single_marker_publisher.publish(single_marker)
 		
 		#creating a pose in the poses[] list for every aruco position being estimated
 		for i in self.particle_list:
@@ -197,7 +206,8 @@ class Particle():
 				estimator=self.kf.markers_estimation[i]
 				#print("measurement: %s"%(measurement))
 				#print("estimator: %s"%(estimator))
-				likelihood=mvn.pdf((measurement.x_world,measurement.y_world), (estimator.x,estimator.y), estimator.covariance)
+				h=np.matrix([[math.cos(self.alfap), math.sin(self.alfap)], [-math.sin(self.alfap), math.cos(self.alfap)]])
+				likelihood=mvn.pdf((measurement.x_world,measurement.y_world), (estimator.x,estimator.y), h.dot(estimator.covariance).dot(h.T) + COVARIANCE_MATRIX)
 				#threshold for wrong observations
 				if likelihood > 0.000000001:
 					self.w=self.w*likelihood
