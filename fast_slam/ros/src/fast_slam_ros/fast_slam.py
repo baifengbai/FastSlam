@@ -7,7 +7,7 @@ from nav_msgs.msg import *
 import tf
 from geometry_msgs.msg import *
 
-N_ARUCOS=28
+N_ARUCOS=100
 SAMPLING_FREQUENCY=1
 
 

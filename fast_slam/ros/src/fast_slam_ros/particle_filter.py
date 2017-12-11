@@ -19,10 +19,10 @@ import matplotlib.pyplot as plt
 #from mpl_toolkits.mplot3d import Axes3D
 
 
-N_ARUCOS=28
+N_ARUCOS=100
 
 #Number of particles - 1000
-N_PARTICLES = 100
+N_PARTICLES = 200
 '''numbp = np.zeros((N_PARTICLES,3))
 numbp[:,0] = np.random.uniform(-6.5,6.5,N_PARTICLES) #6.5 dimensions of room
 numbp[:,1] = np.random.uniform(-6.5,6.5,N_PARTICLES)
@@ -48,11 +48,11 @@ class ParticleFilter():
 		motion_model = (odom_pose[0]-self.odom_prev[0], odom_pose[1]-self.odom_prev[1], odom_pose[2]-self.odom_prev[2])
 		#print(robot_position)
 		self.odom_prev=(odom_pose[0], odom_pose[1], odom_pose[2])
-		weights=[None]*N_PARTICLES
+		#weights=[None]*N_PARTICLES
 		particle_x=[None]*N_PARTICLES
 		particle_y=[None]*N_PARTICLES
 		particle_orientation=[None]*N_PARTICLES
-		erro=[None]*N_PARTICLES
+		#erro=[None]*N_PARTICLES
 		total_w=0
 		i=0
 		for particle in self.particle_list:
@@ -62,7 +62,7 @@ class ParticleFilter():
 			particle_x[i]=particle.x
 			particle_y[i]=particle.y
 			particle_orientation[i]=particle.alfap
-			erro[i]=pow(pow(particle.x,2)+pow(particle.y,2),0.5)
+			#erro[i]=pow(pow(particle.x,2)+pow(particle.y,2),0.5)
 			total_w=total_w+particle.w
 			i=i+1
 		#particles weights normalization
@@ -72,7 +72,7 @@ class ParticleFilter():
 			i=0
 			for particle in self.particle_list:
 				particle.w=particle.w*pow(total_w,-1)
-				weights[i]=particle.w
+				#weights[i]=particle.w
 				n_eff=n_eff+pow(particle.w,2)
 				i=i+1
 		#print(weights)
@@ -85,12 +85,12 @@ class ParticleFilter():
 		self.particle_publisher()
 
 		
-		plt.clf()
-		plt.plot(erro,weights,'o')
-		plt.draw()
-		plt.xlabel('erro')
-		plt.ylabel('weight')
-		plt.pause(0.001)
+		#plt.clf()
+		#plt.plot(erro,weights,'o')
+		#plt.draw()
+		#plt.xlabel('erro')
+		#plt.ylabel('weight')
+		#plt.pause(0.001)
 		
 		
 		
@@ -103,7 +103,7 @@ class ParticleFilter():
 		i=0
 		for m in range(N_PARTICLES):
 			u=r+m*pow(N_PARTICLES,-1)
-			while u>c and i<m:
+			while u>c:
 				i=i+1
 				c=c+self.particle_list[i].w
 			new_list[m]=self.particle_list[i].copy_particle()
@@ -179,9 +179,10 @@ class Particle():
 		#self.y = self.y+motion_model[1]
 		#self.alfap = self.alfap+motion_model[2]
 		if not (abs(motion_model[0])<0.001 and abs(motion_model[1])<0.001 and abs(motion_model[2])<0.0005):
-			self.x = self.x+motion_model[0]+np.random.normal(0,0.07)
-			self.y = self.y+motion_model[1]+np.random.normal(0,0.07)
-			self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.015)
+			self.x = self.x+motion_model[0]+np.random.normal(0,0.12)
+			self.y = self.y+motion_model[1]+np.random.normal(0,0.12)
+			self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.04)
+			print("x:%f y:%f alfa: %f"%(self.x,self.y,self.alfap*180/3.14159265359))
 
 		if aruco_flag == True:
 			self.kf.start_perception(aruco_msg, [self.x,self.y,self.alfap])

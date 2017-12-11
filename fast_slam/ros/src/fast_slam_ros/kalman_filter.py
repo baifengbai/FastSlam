@@ -9,7 +9,7 @@ from geometry_msgs.msg import *
 import copy
 import tf2_geometry_msgs
 
-N_ARUCOS=28
+N_ARUCOS=100
 #Covariance matrix R that represents the covariance of the Gaussian noise of observations
 COVARIANCE_MATRIX=np.matrix([[1.48377597e-01, 2.37789852e-04],[2.37789852e-04, 1.47362967e-01]])*2
 #COVARIANCE_MATRIX=np.matrix([[1.44433477e-04, 2.37789852e-04],[2.37789852e-04, 3.06948739e-03]])
