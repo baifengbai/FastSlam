@@ -19,10 +19,11 @@ import matplotlib.pyplot as plt
 #from mpl_toolkits.mplot3d import Axes3D
 
 
-N_ARUCOS=28
+N_ARUCOS=100
 
 #Number of particles - 1000
-N_PARTICLES = 100
+COVARIANCE_MATRIX=np.matrix([[1.48377597e-01, 2.37789852e-04],[2.37789852e-04, 1.47362967e-01]])*2
+N_PARTICLES = 200
 '''numbp = np.zeros((N_PARTICLES,3))
 numbp[:,0] = np.random.uniform(-6.5,6.5,N_PARTICLES) #6.5 dimensions of room
 numbp[:,1] = np.random.uniform(-6.5,6.5,N_PARTICLES)
@@ -103,7 +104,7 @@ class ParticleFilter():
 		i=0
 		for m in range(N_PARTICLES):
 			u=r+m*pow(N_PARTICLES,-1)
-			while u>c and i<m:
+			while u>c:# and i<m:
 				i=i+1
 				c=c+self.particle_list[i].w
 			new_list[m]=self.particle_list[i].copy_particle()
@@ -196,7 +197,8 @@ class Particle():
 				estimator=self.kf.markers_estimation[i]
 				#print("measurement: %s"%(measurement))
 				#print("estimator: %s"%(estimator))
-				likelihood=mvn.pdf((measurement.x_world,measurement.y_world), (estimator.x,estimator.y), estimator.covariance)
+				h=np.matrix([[math.cos(self.alfap), math.sin(self.alfap)], [-math.sin(self.alfap), math.cos(self.alfap)]])
+				likelihood=mvn.pdf((measurement.x_world,measurement.y_world), (estimator.x,estimator.y), h.dot(estimator.covariance).dot(h.T) + COVARIANCE_MATRIX)
 				#threshold for wrong observations
 				if likelihood > 0.000000001:
 					self.w=self.w*likelihood
