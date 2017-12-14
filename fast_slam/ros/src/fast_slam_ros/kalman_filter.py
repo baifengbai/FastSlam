@@ -219,11 +219,14 @@ class KalmanFilter():
 		id=0;
 		real_map=[]
 		estimated_map=[]
+
 		if flag:
 			plt.ion()
+
 		for i in self.markers_estimation:
 			if i!=None:
 				#print(i)
+				'''
 				mpose=i.get_position()
 				aux_pose=Pose()
 				aux_pose.position.x=mpose[0,0]
@@ -235,6 +238,7 @@ class KalmanFilter():
 				aux_pose.orientation.w=0.707
 				#pose_array.poses.append(aux_pose)
 				pose_array.append(aux_pose)
+				'''
 				size=size+1
 				real_map.append(MAP_TESTBED[MAP_ID.index(id)])
 				estimated_map.append([i.x , i.y])			
@@ -249,7 +253,9 @@ class KalmanFilter():
 		print(real_map)
 		print("------estimated_map-----")
 		print(estimated_map)
-		if estimated_map.size !=0:
+		if estimated_map.size ==0:
+			return pose_array, size
+		else:
 			_,procrustes_map,_= procrustes(real_map,estimated_map,False)
 			if flag:
 				plt.clf()
@@ -259,6 +265,19 @@ class KalmanFilter():
 				plt.legend(handles=[line_real, line_estimated, line_procrusted])
 				plt.draw()
 				plt.pause(0.001)
+			k=0
+			while k < size:
+				aux_pose=Pose()
+				aux_pose.position.x=procrustes_map[k,0]
+				aux_pose.position.y=procrustes_map[k,1]
+				aux_pose.position.z=0.275
+				aux_pose.orientation.x=0
+				aux_pose.orientation.y=-0.707
+				aux_pose.orientation.z=0
+				aux_pose.orientation.w=0.707
+				pose_array.append(aux_pose)
+				k=k+1
+
 		return pose_array, size
 
 		'''if self.markers_estimation[0]!=None:

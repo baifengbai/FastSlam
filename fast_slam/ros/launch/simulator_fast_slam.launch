@@ -13,5 +13,5 @@
  <node name="rviz" pkg="rviz" type="rviz" args="-d $(find fast_slam)/ros/config/rviz_config.rviz" />
 
  <node pkg="rostopic" type="rostopic" name="rostopic_markers_map" args="pub markers_map geometry_msgs/PoseArray -f $(find fast_slam)/ros/config/testbed.yaml" output="screen"/>
-
+ <!--node pkg="rostopic" type="rostopic" name="rostopic_markers_map" args="pub markers_map geometry_msgs/PoseArray -f $(find fast_slam)/ros/config/arucos_5th_floor.yaml" output="screen"/-->
 </launch>
