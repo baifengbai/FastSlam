@@ -18,6 +18,10 @@ import copy
 import matplotlib.pyplot as plt
 #from mpl_toolkits.mplot3d import Axes3D
 
+#Map from 1 to 19 positions
+#MAP_TESTBED=np.matrix([[0.3016118 ,-1.776010],[0.922168,-1.763329],[2.4315,-2.740110],[3.250955,-2.338133],[3.2628,-1.292720],[3.306175,-0.348601],[2.996120,0.537353],[2.241404,1.097244],[0.613022,1.227358],[-0.386236,1.204677],[-1.497996,1.064073],[-1.615080,0.687745],[-2.095216,0.483259],[-2.036722,-0.896368],[-2.0512,-1.4596],[-2.057349,-1.88958],[-2.04076,-2.628],[-1.287612,-3.342672],[-0.55255,-3.1409]])
+#Map in corresponding order with arucos order
+
 
 N_ARUCOS=100
 
@@ -144,8 +148,9 @@ class ParticleFilter():
 		pose_estimate.pose.orientation.w=pw
 		trajectory.poses.append(pose_estimate)	
 		self.path_publisher.publish(trajectory)
-		(markers_aux,size)=	new_particle_list.kf.markers_publisher()
+		(markers_aux,size)=	new_particle_list.kf.markers_publisher(True)
 		single_marker.poses=markers_aux
+
 		self.single_marker_publisher.publish(single_marker)
 		
 		#creating a pose in the poses[] list for every aruco position being estimated
@@ -188,9 +193,12 @@ class Particle():
 		#self.y = self.y+motion_model[1]
 		#self.alfap = self.alfap+motion_model[2]
 		if not (abs(motion_model[0])<0.001 and abs(motion_model[1])<0.001 and abs(motion_model[2])<0.0005):
-			self.x = self.x+motion_model[0]+np.random.normal(0,0.07)
-			self.y = self.y+motion_model[1]+np.random.normal(0,0.07)
-			self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.015)
+			self.x = self.x+motion_model[0]+np.random.normal(0,0.03)
+			self.y = self.y+motion_model[1]+np.random.normal(0,0.03)
+			self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.012)
+			#self.x = self.x+motion_model[0]+np.random.normal(0,0.07)
+			#self.y = self.y+motion_model[1]+np.random.normal(0,0.07)
+			#self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.015)
 
 		if aruco_flag == True:
 			self.kf.start_perception(aruco_msg, [self.x,self.y,self.alfap])
@@ -218,9 +226,6 @@ class Particle():
 		new_p.kf=self.kf.kalman_copy()
 		#new_p.kf=KalmanFilter([self.x,self.y,self.alfap])
 		return new_p
-
-
-
 
 def main():
 	rospy.init_node('particle_filter_node', anonymous=False)

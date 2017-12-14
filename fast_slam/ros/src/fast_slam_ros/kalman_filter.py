@@ -9,6 +9,11 @@ from geometry_msgs.msg import *
 import copy
 import tf2_geometry_msgs
 
+import matplotlib.pyplot as plt
+
+MAP_TESTBED=[[3.2628,-1.292720],[-2.04076,-2.628],[2.241404,1.097244],[-1.287612,-3.342672],[-1.497996,1.064073],[0.922168,-1.763329],[-2.095216,0.483259],[2.996120,0.537353],[0.3016118 ,-1.776010],[-0.386236,1.204677],[0.613022,1.227358],[-2.036722,-0.896368],[3.250955,-2.338133],[-2.0512,-1.4596],[2.4315,-2.740110],[-0.55255,-3.1409],[-1.615080,0.687745],[-2.057349,-1.88958],[3.306175,-0.348601]]
+MAP_ID=[23,30,31,34,37,38,39,41,43,44,47,49,50,51,53,55,57,60,61]
+
 N_ARUCOS=100
 #Covariance matrix R that represents the covariance of the Gaussian noise of observations
 COVARIANCE_MATRIX=np.matrix([[1.48377597e-01, 2.37789852e-04],[2.37789852e-04, 1.47362967e-01]])*2
@@ -124,7 +129,6 @@ class KalmanFilter():
 
 		#self.cov_publisher=rospy.Publisher('marker_cov', PoseWithCovarianceStamped, queue_size=10)
 
-
 	def kalman_copy(self):
 		new_k=KalmanFilter(self.particle_pose, self.cam_transformation)
 		#new_k.arucos.aruco_list=list(self.arucos.aruco_list)
@@ -203,7 +207,7 @@ class KalmanFilter():
 				self.arucos.insert_marker(aruco_id,object_pose_cam.pose.position.x,object_pose_cam.pose.position.y,0,object_pose_world[0,0],object_pose_world[1,0],0)
 				#rospy.loginfo('Aruco %d  detected!'%(aruco_id))
 
-	def markers_publisher(self):
+	def markers_publisher(self,flag=False):
 		#creating PoseArray object for publication
 		#pose_array=PoseArray()
 		pose_array=[Pose()]*0
@@ -212,6 +216,11 @@ class KalmanFilter():
 		#pose_array.header.frame_id="/odom"
 		
 		#creating a pose in the poses[] list for every aruco position being estimated
+		id=0;
+		real_map=[]
+		estimated_map=[]
+		if flag:
+			plt.ion()
 		for i in self.markers_estimation:
 			if i!=None:
 				#print(i)
@@ -227,10 +236,29 @@ class KalmanFilter():
 				#pose_array.poses.append(aux_pose)
 				pose_array.append(aux_pose)
 				size=size+1
+				real_map.append(MAP_TESTBED[MAP_ID.index(id)])
+				estimated_map.append([i.x , i.y])			
+			id=id+1;
+
 
 		#self.marker_publisher.publish(pose_array)
 				#print("marker pose x:%f y:%f"%(aux_pose.position.x,aux_pose.position.y))
-
+		real_map=np.array(real_map)
+		estimated_map=np.array(estimated_map)
+		print("------real_map-----")
+		print(real_map)
+		print("------estimated_map-----")
+		print(estimated_map)
+		if estimated_map.size !=0:
+			_,procrustes_map,_= procrustes(real_map,estimated_map,False)
+			if flag:
+				plt.clf()
+				line_real, =plt.plot(real_map[:,0], real_map[:,1], 'ro',label="real_map")
+				line_estimated, =plt.plot(estimated_map[:,0], estimated_map[:,1], 'bo',label="estimated_map")
+				line_procrusted, =plt.plot(procrustes_map[:,0], procrustes_map[:,1], 'co',label="procrustes_map")
+				plt.legend(handles=[line_real, line_estimated, line_procrusted])
+				plt.draw()
+				plt.pause(0.001)
 		return pose_array, size
 
 		'''if self.markers_estimation[0]!=None:
@@ -273,6 +301,122 @@ class KalmanFilter():
 				self.arucos.cleanList()
 				self.create_detection_list()
 				self.start_kalman_filter()
+
+
+
+
+
+def procrustes(X, Y, scaling=True, reflection='best'):
+    """
+    A port of MATLAB's `procrustes` function to Numpy.
+
+    Procrustes analysis determines a linear transformation (translation,
+    reflection, orthogonal rotation and scaling) of the points in Y to best
+    conform them to the points in matrix X, using the sum of squared errors
+    as the goodness of fit criterion.
+
+        d, Z, [tform] = procrustes(X, Y)
+
+    Inputs:
+    ------------
+    X, Y    
+        matrices of target and input coordinates. they must have equal
+        numbers of  points (rows), but Y may have fewer dimensions
+        (columns) than X.
+
+    scaling 
+        if False, the scaling component of the transformation is forced
+        to 1
+
+    reflection
+        if 'best' (default), the transformation solution may or may not
+        include a reflection component, depending on which fits the data
+        best. setting reflection to True or False forces a solution with
+        reflection or no reflection respectively.
+
+    Outputs
+    ------------
+    d       
+        the residual sum of squared errors, normalized according to a
+        measure of the scale of X, ((X - X.mean(0))**2).sum()
+
+    Z
+        the matrix of transformed Y-values
+
+    tform   
+        a dict specifying the rotation, translation and scaling that
+        maps X --> Y
+
+    """
+
+    n,m = X.shape
+    ny,my = Y.shape
+
+    muX = X.mean(0)
+    muY = Y.mean(0)
+
+    X0 = X - muX
+    Y0 = Y - muY
+
+    ssX = (X0**2.).sum()
+    ssY = (Y0**2.).sum()
+
+    # centred Frobenius norm
+    normX = np.sqrt(ssX)
+    normY = np.sqrt(ssY)
+
+    # scale to equal (unit) norm
+    X0 /= normX
+    Y0 /= normY
+
+    if my < m:
+        Y0 = np.concatenate((Y0, np.zeros(n, m-my)),0)
+
+    # optimum rotation matrix of Y
+    A = np.dot(X0.T, Y0)
+    U,s,Vt = np.linalg.svd(A,full_matrices=False)
+    V = Vt.T
+    T = np.dot(V, U.T)
+
+    if reflection is not 'best':
+
+        # does the current solution use a reflection?
+        have_reflection = np.linalg.det(T) < 0
+
+        # if that's not what was specified, force another reflection
+        if reflection != have_reflection:
+            V[:,-1] *= -1
+            s[-1] *= -1
+            T = np.dot(V, U.T)
+
+    traceTA = s.sum()
+
+    if scaling:
+
+        # optimum scaling of Y
+        b = traceTA * normX / normY
+
+        # standarised distance between X and b*Y*T + c
+        d = 1 - traceTA**2
+
+        # transformed coords
+        Z = normX*traceTA*np.dot(Y0, T) + muX
+
+    else:
+        b = 1
+        d = 1 + ssY/ssX - 2 * traceTA * normY / normX
+        Z = normY*np.dot(Y0, T) + muX
+
+    # transformation matrix
+    if my < m:
+        T = T[:my,:]
+    c = muX - b*np.dot(muY, T)
+
+    #transformation values 
+    tform = {'rotation':T, 'scale':b, 'translation':c}
+
+    return d, Z, tform
+
 
 
 def main():

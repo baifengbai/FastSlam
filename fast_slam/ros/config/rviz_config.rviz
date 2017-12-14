@@ -13,6 +13,8 @@ Panels:
         - /Image1
         - /Path1
         - /PoseArray3
+        - /PoseArray4
+        - /Pose1
       Splitter Ratio: 0.5
     Tree Height: 806
   - Class: rviz/Selection
@@ -143,13 +145,44 @@ Visualization Manager:
       Class: rviz/PoseArray
       Color: 255; 255; 255
       Enabled: true
-      Head Length: 0.0700000003
-      Head Radius: 0.0299999993
+      Head Length: 0.100000001
+      Head Radius: 0.150000006
       Name: PoseArray
-      Shaft Length: 0.230000004
-      Shaft Radius: 0.00999999978
-      Shape: Arrow (Flat)
+      Shaft Length: 1
+      Shaft Radius: 0.0700000003
+      Shape: Arrow (3D)
       Topic: /markers_map
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Arrow Length: 1.39999998
+      Axes Length: 0.300000012
+      Axes Radius: 0.00999999978
+      Class: rviz/PoseArray
+      Color: 85; 170; 255
+      Enabled: true
+      Head Length: 0.100000001
+      Head Radius: 0.150000006
+      Name: PoseArray
+      Shaft Length: 1
+      Shaft Radius: 0.0700000003
+      Shape: Arrow (3D)
+      Topic: /single_marker
+      Unreliable: false
+      Value: true
+    - Alpha: 1
+      Axes Length: 2
+      Axes Radius: 0.100000001
+      Class: rviz/Pose
+      Color: 255; 25; 0
+      Enabled: true
+      Head Length: 0.300000012
+      Head Radius: 0.100000001
+      Name: Pose
+      Shaft Length: 1
+      Shaft Radius: 0.0500000007
+      Shape: Axes
+      Topic: /vrpn_client_node/mocap_marker/pose
       Unreliable: false
       Value: true
   Enabled: true
@@ -176,25 +209,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 12.7147741
+      Distance: 11.7062759
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.0599999987
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 3.01167512
-        Y: -1.13601732
-        Z: 2.59446549
+        X: 0.656217813
+        Y: -0.921140134
+        Z: 2.76574349
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.0500000007
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.00999999978
-      Pitch: 0.639796734
+      Pitch: 0.744796634
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 6.25174427
+      Yaw: 6.25673628
     Saved: ~
 Window Geometry:
   Displays:
