@@ -50,7 +50,10 @@ class ParticleFilter():
 		plt.figure()
 		plt.ion()
 		#plt.show()
-
+		self.mean_error=[]
+		self.std=[]
+		self.track=[]
+		self.true_track=[]
 	def particle_filter_iteration(self, aruco_flag, aruco_msg, odom_pose):
 		motion_model = (odom_pose[0]-self.odom_prev[0], odom_pose[1]-self.odom_prev[1], odom_pose[2]-self.odom_prev[2])
 		#print(robot_position)
@@ -146,9 +149,18 @@ class ParticleFilter():
 		pose_estimate.pose.orientation.y=py
 		pose_estimate.pose.orientation.z=pz
 		pose_estimate.pose.orientation.w=pw
+
+		(trans,rot) = self.listener.lookupTransform('/odom', '/mocap_marker', rospy.Time(0))
+		_, _, oise_yaw = tf.transformations.euler_from_quaternion(rot)
+		self.true_track.append([trans[0],trans[1],oise_yaw])
+		self.track.append([new_particle_list.x,new_particle_list.y,new_particle_list.alfap])
+		print("------track-----")
+		print(self.track)
+		print("------true_track-----")
+		print(self.true_track)
 		trajectory.poses.append(pose_estimate)	
 		self.path_publisher.publish(trajectory)
-		(markers_aux,size)=	new_particle_list.kf.markers_publisher(True)
+		(markers_aux,size)=	new_particle_list.kf.markers_publisher(self.mean_error,self.std,True)
 		single_marker.poses=markers_aux
 
 		self.single_marker_publisher.publish(single_marker)
@@ -166,7 +178,7 @@ class ParticleFilter():
 				aux_pose.orientation.z=az
 				aux_pose.orientation.w=aw
 				pose_array.poses.append(aux_pose)
-				(markers, size)=i.kf.markers_publisher()
+				(markers, size)=i.kf.markers_publisher(self.mean_error,self.std)
 				marker_array.poses=marker_array.poses+markers
 				#print("particle pose x:%f y:%f"%(aux_pose.position.x,aux_pose.position.y))
 		self.particles_publisher.publish(pose_array)
@@ -193,9 +205,9 @@ class Particle():
 		#self.y = self.y+motion_model[1]
 		#self.alfap = self.alfap+motion_model[2]
 		if not (abs(motion_model[0])<0.001 and abs(motion_model[1])<0.001 and abs(motion_model[2])<0.0005):
-			self.x = self.x+motion_model[0]+np.random.normal(0,0.03)
-			self.y = self.y+motion_model[1]+np.random.normal(0,0.03)
-			self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.012)
+			self.x = self.x+motion_model[0]+np.random.normal(0,0.035)
+			self.y = self.y+motion_model[1]+np.random.normal(0,0.035)
+			self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.011)
 			#self.x = self.x+motion_model[0]+np.random.normal(0,0.07)
 			#self.y = self.y+motion_model[1]+np.random.normal(0,0.07)
 			#self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.015)
