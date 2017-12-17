@@ -186,12 +186,13 @@ class ParticleFilter():
 		self.path_publisher.publish(trajectory)
 
 		self.track.append([pose_estimate.pose.position.x,pose_estimate.pose.position.y,aquele_alfap])
-		#print("------track-----")
-		#print(self.track)
-		#print("------true_track-----")
-		#print(self.true_track)
-		#creating a pose in the poses[] list for every aruco position being estimated
+		print("------track-----")
+		print(self.track)
+		print("------true_track-----")
+		print(self.true_track)
+		
 
+		#creating a pose in the poses[] list for every aruco position being estimated
 
 		for i in self.particle_list:
 			if i!=None:				

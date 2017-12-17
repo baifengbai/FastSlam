@@ -261,10 +261,10 @@ class KalmanFilter():
 			return pose_array, size , np.array([0,0]) , np.array([0,0])
 		else:
 			_,procrustes_map,transformation_dict= procrustes(real_map,estimated_map,False)
-			print(transformation_dict)
+			#print(transformation_dict)
 			if flag:
 				print("------proscrustes_map-----")
-				#print(procrustes_map)
+				print(procrustes_map)
 				#euclidian_norm=np.sum(np.abs(real_map - procrustes_map)**2,axis=-1)**(1./2)
 
 				#mean_error.append(np.mean(euclidian_norm))
@@ -291,8 +291,8 @@ class KalmanFilter():
 				pose_array.append(aux_pose)
 				k=k+1
 
-			print(transformation_dict['rotation'])
-			print(transformation_dict['translation'])
+			#print(transformation_dict['rotation'])
+			#print(transformation_dict['translation'])
 			rotation_oise=transformation_dict['rotation']
 			transformation_oise=transformation_dict['translation']
 
