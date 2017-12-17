@@ -12,8 +12,12 @@ import tf2_geometry_msgs
 import matplotlib.pyplot as plt
 
 #piso5
+
 MAP_TESTBED=[[0.83625,-0.37625],[-0.12375,-0.69625],[-1.83375,-0.69625],[-4.64375,-0.69625],[-7.58375,-0.69625],[-10.52875,-0.69625],[-13.61375,-0.69625],[-14.91375,-0.30625],[-14.91375,1.32375],[-14.91375,3.76875],[-14.91375,5.81875],[-14.91375,9.72875],[-14.91375,13.11375],[-0.58375,14.43375],[-3.17375,14.43375],[-4.69875,14.43375],[-7.80875,14.43375],[-10.56875,14.43375],[-14.03875,14.43375],[0.85,3.05875],[0.83625,5.35875],[0.83625,7.62875],[0.83625,10.82875],[0.83625,14.05875],[-1.01625,0.69625],[-2.87625,0.69625],[-6.32625,0.69625],[-9.31125,0.69625],[-12.08125,0.69625],[-13.23875,8.06625],[-13.23875,10.52625],[-5.86125,13.03875],[-9.04125,13.03875],[-12.10125,13.03875],[-0.83625,1.32125],[-0.83625,9.45125],[-0.83625,12.64125]]
 MAP_ID=[37,36,38,30,32,34,40,39,45,44,41,42,50,63,52,51,46,43,49,57,56,55,54,61,29,28,31,33,35,25,59,23,47,48,58,60,53]
+
+#MAP_TESTBED=[[0.83625,-0.37625],[-0.12375,-0.69625],[-1.83375,-0.69625],[-4.64375,-0.69625],[-7.58375,-0.69625],[-10.52875,-0.69625],[-13.61375,-0.69625],[-14.91375,-0.30625],[-14.91375,1.32375],[-14.91375,3.76875],[-14.91375,5.81875],[-14.91375,9.72875],[-14.91375,13.11375],[-0.58375,14.43375],[-3.17375,14.43375],[-4.69875,14.43375],[-7.80875,14.43375],[-10.56875,14.43375],[-14.03875,14.43375],[0.85,3.05875],[0.83625,5.35875],[0.83625,7.62875],[0.83625,10.82875],[0.83625,14.05875],[-1.01625,0.69625],[-2.87625,0.69625],[-6.32625,0.69625],[-9.31125,0.69625],[-12.08125,0.69625],[-13.23875,8.06625],[-13.23875,10.52625],[-5.86125,13.03875],[-9.04125,13.03875],[-12.10125,13.03875],[-0.83625,1.32125],[-0.83625,9.45125],[-0.83625,12.64125]]
+#MAP_ID=[37,36,38,30,32,34,40,39,45,44,41,42,50,63,52,51,46,43,49,57,56,55,54,61,29,28,31,33,35,25,59,23,47,48,58,60,53]
 
 #socrob
 #MAP_TESTBED=[[3.2628,-1.292720],[-2.04076,-2.628],[2.241404,1.097244],[-1.287612,-3.342672],[-1.497996,1.064073],[0.922168,-1.763329],[-2.095216,0.483259],[2.996120,0.537353],[0.3016118 ,-1.776010],[-0.386236,1.204677],[0.613022,1.227358],[-2.036722,-0.896368],[3.250955,-2.338133],[-2.0512,-1.4596],[2.4315,-2.740110],[-0.55255,-3.1409],[-1.615080,0.687745],[-2.057349,-1.88958],[3.306175,-0.348601]]
@@ -212,7 +216,7 @@ class KalmanFilter():
 				self.arucos.insert_marker(aruco_id,object_pose_cam.pose.position.x,object_pose_cam.pose.position.y,0,object_pose_world[0,0],object_pose_world[1,0],0)
 				#rospy.loginfo('Aruco %d  detected!'%(aruco_id))
 
-	def markers_publisher(self,flag=False):
+	def markers_publisher(self,mean_error,std,flag=False):
 		#creating PoseArray object for publication
 		#pose_array=PoseArray()
 		pose_array=[Pose()]*0
@@ -254,22 +258,31 @@ class KalmanFilter():
 				#print("marker pose x:%f y:%f"%(aux_pose.position.x,aux_pose.position.y))
 		real_map=np.array(real_map)
 		estimated_map=np.array(estimated_map)
-		print("------real_map-----")
-		print(real_map)
-		print("------estimated_map-----")
-		print(estimated_map)
+		#print("------real_map-----")
+		#print(real_map)
+		#print("------estimated_map-----")
+		#print(estimated_map)
 		if estimated_map.size ==0:
-			return pose_array, size
+			return pose_array, size , np.array([0,0]) , np.array([0,0])
 		else:
-			_,procrustes_map,_= procrustes(real_map,estimated_map,False)
+			_,procrustes_map,transformation_dict= procrustes(real_map,estimated_map,False)
+			print(transformation_dict)
 			if flag:
-				plt.clf()
-				line_real, =plt.plot(real_map[:,0], real_map[:,1], 'ro',label="real_map")
-				line_estimated, =plt.plot(estimated_map[:,0], estimated_map[:,1], 'bo',label="estimated_map")
-				line_procrusted, =plt.plot(procrustes_map[:,0], procrustes_map[:,1], 'co',label="procrustes_map")
-				plt.legend(handles=[line_real, line_estimated, line_procrusted])
-				plt.draw()
-				plt.pause(0.001)
+				print("------proscrustes_map-----")
+				#print(procrustes_map)
+				#euclidian_norm=np.sum(np.abs(real_map - procrustes_map)**2,axis=-1)**(1./2)
+
+				#mean_error.append(np.mean(euclidian_norm))
+				#std.append(np.std(euclidian_norm))
+				#plt.errorbar(range(len(mean_error)), mean_error , yerr=std, fmt='o')
+
+				#plt.clf()
+				#line_real, =plt.plot(real_map[:,0], real_map[:,1], 'ro',label="real_map")
+				#line_estimated, =plt.plot(estimated_map[:,0], estimated_map[:,1], 'bo',label="estimated_map")
+				#line_procrusted, =plt.plot(procrustes_map[:,0], procrustes_map[:,1], 'co',label="procrustes_map")
+				#plt.legend(handles=[line_real, line_estimated, line_procrusted])
+				#plt.draw()
+				#plt.pause(0.001)
 			k=0
 			while k < size:
 				aux_pose=Pose()
@@ -283,7 +296,12 @@ class KalmanFilter():
 				pose_array.append(aux_pose)
 				k=k+1
 
-		return pose_array, size
+			print(transformation_dict['rotation'])
+			print(transformation_dict['translation'])
+			rotation_oise=transformation_dict['rotation']
+			transformation_oise=transformation_dict['translation']
+
+		return (pose_array, size , rotation_oise , transformation_oise)
 
 		'''if self.markers_estimation[0]!=None:
 			covposest=PoseWithCovarianceStamped()
