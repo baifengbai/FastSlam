@@ -193,9 +193,9 @@ class Particle():
 		#self.y = self.y+motion_model[1]
 		#self.alfap = self.alfap+motion_model[2]
 		if not (abs(motion_model[0])<0.001 and abs(motion_model[1])<0.001 and abs(motion_model[2])<0.0005):
-			self.x = self.x+motion_model[0]+np.random.normal(0,0.03)
-			self.y = self.y+motion_model[1]+np.random.normal(0,0.03)
-			self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.012)
+			self.x = self.x+motion_model[0]+np.random.normal(0,0.07)
+			self.y = self.y+motion_model[1]+np.random.normal(0,0.07)
+			self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.015)
 			#self.x = self.x+motion_model[0]+np.random.normal(0,0.07)
 			#self.y = self.y+motion_model[1]+np.random.normal(0,0.07)
 			#self.alfap = self.alfap+motion_model[2]+np.random.normal(0,0.015)
